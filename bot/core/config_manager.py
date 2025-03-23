@@ -75,6 +75,7 @@ class Config:
     SEARCH_LIMIT = 0
     SEARCH_PLUGINS = []
     SET_COMMANDS = True
+    SHOW_CLOUD_LINK = False
     STATUS_LIMIT = 10
     STATUS_UPDATE_INTERVAL = 15
     STOP_DUPLICATE = False
