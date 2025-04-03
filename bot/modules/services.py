@@ -165,7 +165,7 @@ async def ping(_, message):
     reply = await send_message(message, "<i>Starting Ping..</i>")
     end_time = monotonic()
     await edit_message(
-        reply, f"<i>Pong!</i>\n <code>{int((end_time - start_time) * 1000)} ms</code>"
+        reply, f"<i>Get a life!, ping is 👇</i>\n <code>{int((end_time - start_time) * 1000)} ms</code>"
     )
 
 
