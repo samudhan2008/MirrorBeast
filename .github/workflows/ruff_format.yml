@@ -6,7 +6,7 @@ on:
       branch:
         description: 'Branch to format'
         required: true
-        default: 'wzv3'
+        default: 'master'
         type: string
 
 jobs:
@@ -24,10 +24,10 @@ jobs:
     - name: Set up Python3
       uses: actions/setup-python@v4
 
-    - name: Install ruff Linter
+    - name: Install Ruff Linter
       run: pip install ruff
 
-    - name: Run ruff to format code
+    - name: Run Ruff to Format Code
       run: |
         ruff check . --exit-zero
         ruff format .
@@ -41,5 +41,5 @@ jobs:
           echo "No changes to commit."
         else
           git commit -m "style: Auto Ruff Formatter"
-          git push origin ${{ github.ref }}
+          git push origin HEAD:${{ github.event.inputs.branch }}
         fi
