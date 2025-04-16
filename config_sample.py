@@ -27,6 +27,10 @@ NAME_SWAP = ""
 FFMPEG_CMDS = {}
 UPLOAD_PATHS = {}
 
+# Custom Bot Header
+CUSTOM_BOT_HEADER = "Beast"
+CUSTOM_BOT_HEADER_LINK = "https://t.me/MirrorBeast"
+
 # Hyper Tg Downloader
 HELPER_TOKENS = ""
 

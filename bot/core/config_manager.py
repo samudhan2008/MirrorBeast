@@ -101,6 +101,8 @@ class Config:
     USE_SERVICE_ACCOUNTS = False
     WEB_PINCODE = True
     YT_DLP_OPTIONS = {}
+    CUSTOM_BOT_HEADER = "Beast"
+    CUSTOM_BOT_HEADER_LINK = "https://t.me/MirrorBeast"
 
     @classmethod
     def get(cls, key):
