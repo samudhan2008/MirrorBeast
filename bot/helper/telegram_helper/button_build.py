@@ -21,6 +21,11 @@ class ButtonMaker:
             InlineKeyboardButton(text=key, callback_data=data)
         )
 
+    def callback_button(self, key, data, position=None):
+        self.buttons[position if position in self.buttons else "default"].append(
+            InlineKeyboardButton(text=key, callback_data=data)
+        )
+
     def build_menu(self, b_cols=1, h_cols=8, fb_cols=2, lb_cols=2, f_cols=8):
         chunk = lambda lst, n: [
             lst[i : i + n] for i in range(0, len(lst), n)
