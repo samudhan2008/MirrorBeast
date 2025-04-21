@@ -353,26 +353,19 @@ class TaskListener(TaskConfig):
                 msg += f"\n┠ <b>Corrupted Files</b> → {mime_type}"
             msg += f"\n┖ <b>Task By</b> → {self.tag}\n\n"
 
-            # Create button for saving to saved messages
-            save_button = ButtonMaker()
-            save_button.callback_button("📥 Save", save_prefix)
-            save_markup = save_button.build_menu(1)
-
-            if self.bot_pm:
-                pmsg = msg
-                pmsg += "〶 <b><u>Action Performed :</u></b>\n"
-                pmsg += "⋗ <i>File(s) have been sent to User PM</i>\n\n"
-                if self.is_super_chat:
-                    await send_message(self.message, pmsg, save_markup)
-
-            if not files and not self.is_super_chat:
-                await send_message(self.message, msg, save_markup)
-            else:
-                log_chat = self.user_id if self.bot_pm else self.message
-                msg += "〶 <b><u>Files List :</u></b>\n"
+            # Always send to PM if it's a leech task
+            try:
+                # Ensure we have a valid user_id
+                user_id = self.user_id
+                LOGGER.info(f"Attempting to send leech results to user PM: {user_id}")
+                
+                # Full message prepared for PM
+                full_msg = msg
+                full_msg += "〶 <b><u>Files List :</u></b>\n"
                 fmsg = ""
                 for index, (link, name) in enumerate(files.items(), start=1):
                     chat_id, msg_id = link.split("/")[-2:]
+                    # Add direct link to the file in PM message
                     fmsg += f"{index}. <a href='{link}'>{name}</a>"
                     if Config.MEDIA_STORE and (
                         self.is_super_chat or Config.LEECH_DUMP_CHAT
@@ -382,12 +375,88 @@ class TaskListener(TaskConfig):
                         flink = f"https://t.me/{TgClient.BNAME}?start={encode_slink('file' + chat_id + '&&' + msg_id)}"
                         fmsg += f"\n┖ <b>Get Media</b> → <a href='{flink}'>Store Link</a> | <a href='https://t.me/share/url?url={flink}'>Share Link</a>"
                     fmsg += "\n"
-                    if len(fmsg.encode() + msg.encode()) > 4000:
+                    
+                # Send notification to group
+                group_msg = f"<b><i>{escape(self.name)}</i></b>\n│"
+                group_msg += f"\n┠ <b>Task Size</b> → {get_readable_file_size(self.size)}"
+                group_msg += f"\n┠ <b>Status</b> → Completed and sent to your PM"
+                group_msg += f"\n┖ <b>Task By</b> → {self.tag}"
+                
+                # Send full message with links to PM - Using direct API method
+                if fmsg:
+                    if len(fmsg.encode() + full_msg.encode()) <= 4000:
+                        await send_message(
+                            user_id, 
+                            full_msg + fmsg
+                        )
+                        LOGGER.info(f"Successfully sent complete message to user PM: {user_id}")
+                    else:
+                        # Split into multiple messages if too long
+                        await send_message(
+                            user_id, 
+                            full_msg
+                        )
+                        
+                        chunks = []
+                        current_chunk = ""
+                        for line in fmsg.splitlines(True):
+                            if len(current_chunk.encode() + line.encode()) > 4000:
+                                chunks.append(current_chunk)
+                                current_chunk = line
+                            else:
+                                current_chunk += line
+                        if current_chunk:
+                            chunks.append(current_chunk)
+                            
+                        for chunk in chunks:
+                            await sleep(1)  # Avoid rate limiting
+                            await send_message(
+                                user_id, 
+                                chunk
+                            )
+                        LOGGER.info(f"Successfully sent chunked messages to user PM: {user_id}")
+                else:
+                    # No files to list, just send the message
+                    await send_message(
+                        user_id, 
+                        full_msg
+                    )
+                    LOGGER.info(f"Successfully sent message to user PM: {user_id}")
+                
+                # Send notification to group
+                await send_message(self.message, group_msg)
+            except Exception as e:
+                # If sending to PM fails, fall back to sending in group
+                LOGGER.error(f"Failed to send message to PM: {str(e)}")
+                
+                # Create buttons for group message
+                save_button = ButtonMaker()
+                save_button.callback_button("📥 Save", save_prefix)
+                save_markup = save_button.build_menu(1)
+                
+                if not files and not self.is_super_chat:
+                    await send_message(self.message, msg, save_markup)
+                else:
+                    log_chat = self.message
+                    msg += "〶 <b><u>Files List :</u></b>\n"
+                    fmsg = ""
+                    for index, (link, name) in enumerate(files.items(), start=1):
+                        chat_id, msg_id = link.split("/")[-2:]
+                        fmsg += f"{index}. <a href='{link}'>{name}</a>"
+                        if Config.MEDIA_STORE and (
+                            self.is_super_chat or Config.LEECH_DUMP_CHAT
+                        ):
+                            if chat_id.isdigit():
+                                chat_id = f"-100{chat_id}"
+                            flink = f"https://t.me/{TgClient.BNAME}?start={encode_slink('file' + chat_id + '&&' + msg_id)}"
+                            fmsg += f"\n┖ <b>Get Media</b> → <a href='{flink}'>Store Link</a> | <a href='https://t.me/share/url?url={flink}'>Share Link</a>"
+                        fmsg += "\n"
+                        if len(fmsg.encode() + msg.encode()) > 4000:
+                            await send_message(log_chat, msg + fmsg, save_markup)
+                            await sleep(1)
+                            fmsg = ""
+                    if fmsg != "":
                         await send_message(log_chat, msg + fmsg, save_markup)
-                        await sleep(1)
-                        fmsg = ""
-                if fmsg != "":
-                    await send_message(log_chat, msg + fmsg, save_markup)
         else:
             msg += f"\n│\n┟ <b>Type</b> → {mime_type}"
             if mime_type == "Folder":
@@ -395,9 +464,7 @@ class TaskListener(TaskConfig):
                 msg += f"\n┠ <b>Files</b> → {files}"
             if (
                 link
-                or rclone_path
-                and Config.RCLONE_SERVE_URL
-                and not self.private_link
+                or (rclone_path and Config.RCLONE_SERVE_URL and not self.private_link)
             ):
                 buttons = ButtonMaker()
                 if (link and Config.SHOW_CLOUD_LINK):

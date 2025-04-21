@@ -13,7 +13,7 @@ from .tg_client import TgClient
 
 
 async def save_to_saved_messages(_, query):
-    """Forwards the message to user's Saved Messages when they click the save button"""
+    """Sends the complete message with buttons to user's PM when they click the save button"""
     user_id = query.from_user.id
     message = query.message
     prefix = "save_"
@@ -22,10 +22,45 @@ async def save_to_saved_messages(_, query):
         return
     
     try:
-        # Forward the message to user's saved messages
-        await message.forward(user_id)
-        await query.answer("Message sent to your Saved Messages!", show_alert=True)
+        LOGGER.info(f"Save button clicked by user {user_id}")
+        # Extract message content and buttons to send to user's PM
+        text = message.text or message.caption or ""
+        
+        # Create a new message with the same content and buttons in user's PM
+        if message.text:
+            LOGGER.info(f"Sending text message to user {user_id}")
+            await send_message(
+                user_id,
+                text,
+                message.reply_markup
+            )
+        elif message.caption:
+            if message.photo:
+                LOGGER.info(f"Sending photo with caption to user {user_id}")
+                await TgClient.bot.send_photo(
+                    chat_id=user_id,
+                    photo=message.photo.file_id,
+                    caption=text,
+                    reply_markup=message.reply_markup
+                )
+            elif message.document:
+                LOGGER.info(f"Sending document with caption to user {user_id}")
+                await TgClient.bot.send_document(
+                    chat_id=user_id,
+                    document=message.document.file_id,
+                    caption=text,
+                    reply_markup=message.reply_markup
+                )
+        
+        # Notify user
+        await query.answer("Message sent to your PM with all links!", show_alert=True)
+        
+        # Reply to the original message that the content was sent to PM
+        reply_text = f"@{query.from_user.username or user_id}, I've sent this to your PM"
+        await message.reply_text(reply_text)
+        LOGGER.info(f"Successfully sent saved message to user {user_id}")
     except Exception as e:
+        LOGGER.error(f"Error in save_to_saved_messages: {str(e)}")
         await query.answer(f"Error: {str(e)}", show_alert=True)
 
 def add_handlers():
