@@ -307,7 +307,7 @@ async def status_pages(_, query):
 ├ <b>Clone:</b> {tasks["Clone"]} | <b>CheckUp:</b> {tasks["CheckUp"]}
 ├ <b>Paused:</b> {tasks["Pause"]} | <b>SamVideo:</b> {tasks["SamVid"]}
 ╰ <b>Convert:</b> {tasks["ConvertMedia"]} | <b>FFmpeg:</b> {tasks["FFmpeg"]}
-│
+
 ╭ <b>Total Download Speed:</b> {get_readable_file_size(dl_speed)}/s
 ├ <b>Total Upload Speed:</b> {get_readable_file_size(up_speed)}/s
 ╰ <b>Total Seeding Speed:</b> {get_readable_file_size(seed_speed)}/s
