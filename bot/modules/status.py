@@ -33,9 +33,34 @@ from ..helper.telegram_helper.message_utils import (
     edit_message,
 )
 from ..helper.telegram_helper.button_build import ButtonMaker
-from config import OWNER_ID  # ✅ Import OWNER_ID cleanly from config.py
+import os
 import random
+import importlib.util
+from ..core.config_manager import Config
 
+def get_owner_id():
+    # 1. Try to import from config.py if present
+    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.py')
+    if os.path.exists(config_path):
+        spec = importlib.util.spec_from_file_location('config', config_path)
+        config = importlib.util.module_from_spec(spec)
+        try:
+            spec.loader.exec_module(config)
+            if hasattr(config, 'OWNER_ID'):
+                return config.OWNER_ID
+        except Exception:
+            pass
+    # 2. Try environment variable
+    owner_id_env = os.getenv('OWNER_ID')
+    if owner_id_env is not None:
+        try:
+            return int(owner_id_env)
+        except ValueError:
+            pass
+    # 3. Fallback to config_manager.py
+    return getattr(Config, 'OWNER_ID', 0)
+
+OWNER_ID = get_owner_id()
 
 # Easter eggs for normal users (50)
 easter_eggs = [
