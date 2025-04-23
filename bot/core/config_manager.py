@@ -23,7 +23,7 @@ class Config:
     MEDIA_STORE = True
     FORCE_SUB_IDS = ""
     GDRIVE_ID = ""
-    GD_DESP = "Uploaded with WZ Bot"
+    GD_DESP = "Uploaded by Beast"
     INSTADL_API = ""
     IMDB_TEMPLATE = ""
     INCOMPLETE_TASK_NOTIFIER = False
