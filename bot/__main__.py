@@ -119,5 +119,5 @@ TgClient.bot.add_handler(
     )
 )
 
-LOGGER.info("WZ Client(s) & Services Started !")
+LOGGER.info("Beast is now running!")
 bot_loop.run_forever()
