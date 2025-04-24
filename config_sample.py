@@ -57,6 +57,10 @@ STORAGE_LIMIT = 0
 # Insta video downloader api
 INSTADL_API = ""
 
+# Nzb search
+HYDRA_IP = ""
+HYDRA_API_KEY = ""
+
 # Media Search
 IMDB_TEMPLATE = """<b>🎬 Title:</b> <a href="{url}">{title}</a> <b>({year})</b>
 <b>🎭 Also Known As:</b> <i>{aka}</i>
@@ -134,7 +138,7 @@ USENET_SERVERS = [
 # Update
 UPSTREAM_REPO = ""
 UPSTREAM_BRANCH = "master"
-UPDATE_PKGS = False
+UPDATE_PKGS = True
 
 # Leech
 LEECH_SPLIT_SIZE = 0
