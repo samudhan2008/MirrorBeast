@@ -167,7 +167,7 @@ class Clone(TaskListener):
 ╭ <b>Task Size</b> → {get_readable_file_size(self.size)}
 ├ <b>In Mode</b> → {self.mode[0]}
 ├ <b>Out Mode</b> → {self.mode[1]}
-{limit_exceeded}""")
+╰ {limit_exceeded}""")
                 return
             await self.on_download_start()
             LOGGER.info(f"Clone Started: Name: {self.name} - Source: {self.link}")

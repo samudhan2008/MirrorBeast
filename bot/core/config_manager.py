@@ -12,6 +12,8 @@ class Config:
     BOT_MAX_TASKS = 0
     BOT_PM = False
     CMD_SUFFIX = ""
+    CUSTOM_BOT_HEADER = "Beast"
+    CUSTOM_BOT_HEADER_LINK = "https://t.me/MirrorBeast"
     DEFAULT_LANG = "en"
     DATABASE_URL = ""
     DEFAULT_UPLOAD = "rc"
@@ -101,8 +103,6 @@ class Config:
     USE_SERVICE_ACCOUNTS = False
     WEB_PINCODE = True
     YT_DLP_OPTIONS = {}
-    CUSTOM_BOT_HEADER = "Beast"
-    CUSTOM_BOT_HEADER_LINK = "https://t.me/MirrorBeast"
 
     @classmethod
     def get(cls, key):
