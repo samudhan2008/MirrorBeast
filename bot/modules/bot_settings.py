@@ -170,13 +170,13 @@ async def get_buttons(key=None, edit_type=None, edit_mode=False):
             ]
         )
         msg = f"""⌬ <b>Private File Settings</b>
-┠ <b>Dashboard :</b> 
-┃
-┠ {txt}
-┃
-┠ <b>Delete File</b> → Send the file name as text message, Like <code>rclone.conf</code>.
-┃
-┖ <b>Note:</b> Changing .netrc will not take effect for aria2c until restart."""
+╭ <b>Dashboard :</b> 
+|
+├ {txt}
+|
+├ <b>Delete File</b> → Send the file name as text message, Like <code>rclone.conf</code>.
+|
+╰ <b>Note:</b> Changing .netrc will not take effect for aria2c until restart."""
         if edit_mode:
             msg += "\n\n<i>Send the file name to delete the file, file to save the file & for new file create, follow below format.</i> \n\n<b>Format:</b> \nfile_name\n\ncontents of file</i>\n\n<b>Time Left :</b> <code>60 sec</code>"
     elif key == "aria":
@@ -872,7 +872,9 @@ async def edit_bot_settings(client, query):
         if await aiopath.exists(filename):
             await (
                 await create_subprocess_shell(
-                    f"git add -f {filename} \
+                    f"git config --global user.email 131198906+ThePrateekBhatia@users.noreply.github.com \
+                    && git config --global user.name Prateek Bhatia \
+                    && git add -f {filename} \
                     && git commit -sm botsettings -q \
                     && git push origin {Config.UPSTREAM_BRANCH} -qf"
                 )
@@ -880,7 +882,9 @@ async def edit_bot_settings(client, query):
         else:
             await (
                 await create_subprocess_shell(
-                    f"git rm -r --cached {filename} \
+                    f"git config --global user.email 131198906+ThePrateekBhatia@users.noreply.github.com \
+                    && git config --global user.name Prateek Bhatia \
+                    && git rm -r --cached {filename} \
                     && git commit -sm botsettings -q \
                     && git push origin {Config.UPSTREAM_BRANCH} -qf"
                 )

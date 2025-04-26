@@ -122,12 +122,12 @@ async def get_stats(event, key="home"):
             )[0]
         official_v = (
             await cmd_exec(
-                f"curl -o latestversion.py https://raw.githubusercontent.com/SilentDemonSD/WZML-X/{Config.UPSTREAM_BRANCH}/bot/version.py -s && python3 latestversion.py && rm latestversion.py",
+                f"curl -o latestversion.py https://raw.githubusercontent.com/BeastBots/MirrorBeast/{Config.UPSTREAM_BRANCH}/bot/version.py -s && python3 latestversion.py && rm latestversion.py",
                 True,
             )
         )[0]
         msg = f"""⌬ <b><i>Repo Statistics :</i></b>
-│
+
 ╭ <b>Bot Updated :</b> {last_commit}
 ├ <b>Current Version :</b> {get_version()}
 ├ <b>Latest Version :</b> {official_v}
@@ -137,7 +137,7 @@ async def get_stats(event, key="home"):
     """
     elif key == "stpkgs":
         msg = f"""⌬ <b><i>Packages Statistics :</i></b>
-│
+
 ╭ <b>python:</b> {bot_cache["eng_versions"]["python"]}
 ├ <b>aria2:</b> {bot_cache["eng_versions"]["aria2"]}
 ├ <b>qBittorrent:</b> {bot_cache["eng_versions"]["qBittorrent"]}
@@ -153,7 +153,7 @@ async def get_stats(event, key="home"):
 """
     elif key == "tlimits":
         msg = f"""⌬ <b><i>Bot Task Limits :</i></b>
-│
+
 ╭ <b>Direct Limit :</b> {Config.DIRECT_LIMIT or "∞"} GB
 ├ <b>Torrent Limit :</b> {Config.TORRENT_LIMIT or "∞"} GB
 ├ <b>GDriveDL Limit :</b> {Config.GD_DL_LIMIT or "∞"} GB
@@ -167,8 +167,8 @@ async def get_stats(event, key="home"):
 ├ <b>Leech Limit :</b> {Config.LEECH_LIMIT or "∞"} GB
 ├ <b>Archive Limit :</b> {Config.ARCHIVE_LIMIT or "∞"} GB
 ├ <b>Extract Limit :</b> {Config.EXTRACT_LIMIT or "∞"} GB
-┞ <b>Threshold Storage :</b> {Config.STORAGE_LIMIT or "∞"} GB
-│
+╰ <b>Threshold Storage :</b> {Config.STORAGE_LIMIT or "∞"} GB
+
 ╭ <b>Token Validity :</b> {Config.VERIFY_TIMEOUT or "Disabled"}
 ├ <b>User Time Limit :</b> {Config.USER_TIME_INTERVAL or "0"}s / task
 ├ <b>User Max Tasks :</b> {Config.USER_MAX_TASKS or "∞"}
