@@ -18,6 +18,7 @@ class Config:
     DATABASE_URL = ""
     DEFAULT_UPLOAD = "rc"
     DELETE_LINKS = False
+    DISABLE_TORRENTS = False
     EQUAL_SPLITS = False
     EXCLUDED_EXTENSIONS = ""
     FFMPEG_CMDS = {}
