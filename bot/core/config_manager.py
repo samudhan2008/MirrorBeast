@@ -27,6 +27,8 @@ class Config:
     FORCE_SUB_IDS = ""
     GDRIVE_ID = ""
     GD_DESP = "Uploaded by Beast"
+    AUTHOR_NAME = "Beast"
+    AUTHOR_URL = "https://t.me/MirrorBeast"
     INSTADL_API = ""
     IMDB_TEMPLATE = ""
     INCOMPLETE_TASK_NOTIFIER = False

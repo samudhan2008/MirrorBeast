@@ -41,6 +41,10 @@ MEGA_PASSWORD = ""
 # Disable Torrent
 DISABLE_TORRENTS = False
 
+# Telegraph
+AUTHOR_NAME = "Beast"
+AUTHOR_URL = "https://t.me/MirrorBeast"
+
 # Task Limits
 DIRECT_LIMIT = 0
 MEGA_LIMIT = 0
