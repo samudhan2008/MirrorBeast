@@ -38,8 +38,9 @@ HELPER_TOKENS = ""
 MEGA_EMAIL = ""
 MEGA_PASSWORD = ""
 
-# Disable Torrent
+# Disable Options
 DISABLE_TORRENTS = False
+DISABLE_LEECH = False
 
 # Telegraph
 AUTHOR_NAME = "Beast"
