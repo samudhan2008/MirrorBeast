@@ -41,6 +41,7 @@ MEGA_PASSWORD = ""
 # Disable Options
 DISABLE_TORRENTS = False
 DISABLE_LEECH = False
+DISABLE_BULK = False
 
 # Telegraph
 AUTHOR_NAME = "Beast"
