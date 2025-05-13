@@ -43,6 +43,7 @@ DISABLE_TORRENTS = False
 DISABLE_LEECH = False
 DISABLE_BULK = False
 DISABLE_MULTI = False
+DISABLE_SEED = False
 
 # Telegraph
 AUTHOR_NAME = "Beast"
