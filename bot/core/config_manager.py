@@ -22,6 +22,7 @@ class Config:
     DISABLE_LEECH = False
     DISABLE_BULK = False
     DISABLE_MULTI = False
+    DISABLE_SEED = False
     EQUAL_SPLITS = False
     EXCLUDED_EXTENSIONS = ""
     FFMPEG_CMDS = {}
