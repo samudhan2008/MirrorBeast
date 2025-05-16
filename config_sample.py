@@ -168,6 +168,7 @@ THUMBNAIL_LAYOUT = ""
 # Log Channels
 LEECH_DUMP_CHAT = ""
 LINKS_LOG_ID = ""
+MIRROR_LOG_ID = ""
 
 # qBittorrent/Aria2c
 TORRENT_TIMEOUT = 0
