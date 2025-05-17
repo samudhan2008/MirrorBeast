@@ -3,7 +3,7 @@ from functools import partial
 from html import escape
 from io import BytesIO
 from os import getcwd
-from re import sub
+from re import sub, findall
 from time import time
 
 from aiofiles.os import makedirs, remove
@@ -251,8 +251,8 @@ async def get_user_settings(from_user, stype="main"):
         btns = buttons.build_menu(1)
 
         text = f"""⌬ <b>General Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ├ <b>Default Upload Package</b> → <b>{du}</b>
 ╰ <b>Default Usage Mode</b> → <b>{tr}'s</b> token/config
 """
@@ -391,8 +391,8 @@ async def get_user_settings(from_user, stype="main"):
         btns = buttons.build_menu(2)
 
         text = f"""⌬ <b>Leech Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ├ Leech Type → <b>{ltype}</b>
 ├ Custom Thumbnail → <b>{thumbmsg}</b>
 ├ Leech Split Size → <b>{get_readable_file_size(split_size)}</b>
@@ -434,8 +434,8 @@ async def get_user_settings(from_user, stype="main"):
             rcflags = "None"
 
         text = f"""⌬ <b>RClone Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ├ <b>Rclone Config</b> → <b>{rccmsg}</b>
 ├ <b>Rclone Flags</b> → <code>{rcflags}</code>
 ╰ <b>Rclone Path</b> → <code>{rccpath}</code>"""
@@ -474,8 +474,8 @@ async def get_user_settings(from_user, stype="main"):
         btns = buttons.build_menu(2)
 
         text = f"""⌬ <b>GDrive Tools Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ├ <b>Gdrive Token</b> → <b>{tokenmsg}</b>
 ├ <b>Gdrive ID</b> → <code>{gdrive_id}</code>
 ├ <b>Index URL</b> → <code>{index}</code>
@@ -514,8 +514,8 @@ async def get_user_settings(from_user, stype="main"):
         btns = buttons.build_menu(1)
 
         text = f"""⌬ <b>Mirror Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ├ <b>Rclone Config</b> → <b>{rccmsg}</b>
 ├ <b>Rclone Path</b> → <code>{rccpath}</code>
 ├ <b>Gdrive Token</b> → <b>{tokenmsg}</b>
@@ -527,9 +527,9 @@ async def get_user_settings(from_user, stype="main"):
     elif stype == "ffset":
         buttons.data_button("FFmpeg Cmds", f"userset {user_id} menu FFMPEG_CMDS")
         if user_dict.get("FFMPEG_CMDS", False):
-            ffc = user_dict["FFMPEG_CMDS"]
+            ffc = "Exists"
         elif "FFMPEG_CMDS" not in user_dict and Config.FFMPEG_CMDS:
-            ffc = Config.FFMPEG_CMDS
+            ffc = "Exists"
         else:
             ffc = "<b>Not Exists</b>"
 
@@ -546,8 +546,8 @@ async def get_user_settings(from_user, stype="main"):
         btns = buttons.build_menu(2)
 
         text = f"""⌬ <b>FF Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ╰ <b>FFmpeg Commands</b> → {ffc}"""
 
     elif stype == "advanced":
@@ -591,8 +591,8 @@ async def get_user_settings(from_user, stype="main"):
         btns = buttons.build_menu(1)
 
         text = f"""⌬ <b>Advanced Settings :</b>
+
 ╭ <b>Name</b> → {user_name}
-|
 ├ <b>Name Swaps</b> → {ns_msg}
 ├ <b>Excluded Extensions</b> → <code>{ex_ex}</code>
 ├ <b>Upload Paths</b> → <b>{upload_paths}</b>
@@ -729,9 +729,9 @@ async def get_menu(option, message, user_id):
     if user_dict.get(option, False):
         if option == "THUMBNAIL":
             buttons.data_button(
-                "View Thumb", f"userset {user_id} view THUMBNAIL", "header"
+                "View Thumb", f"userset {user_id} view {option}", "header"
             )
-        elif option in ["YT_DLP_OPTIONS", "FFMPEG_CMDS", "UPLOAD_PATHS"]:
+        elif option in ["YT_DLP_OPTIONS", "UPLOAD_PATHS"]:
             buttons.data_button(
                 "Add One", f"userset {user_id} addone {option}", "header"
             )
@@ -743,6 +743,18 @@ async def get_menu(option, message, user_id):
             buttons.data_button("Reset", f"userset {user_id} reset {option}")
         elif await aiopath.exists(file_dict[option]):
             buttons.data_button("Remove", f"userset {user_id} remove {option}")
+    if option == "FFMPEG_CMDS":
+        ffc = None
+        if user_dict.get("FFMPEG_CMDS", False):
+            ffc = user_dict["FFMPEG_CMDS"]
+            buttons.data_button("Add one", f"userset {user_id} addone {option}")
+            buttons.data_button("Remove one", f"userset {user_id} rmone {option}")
+        elif "FFMPEG_CMDS" not in user_dict and Config.FFMPEG_CMDS:
+            ffc = Config.FFMPEG_CMDS
+        if ffc:
+            buttons.data_button("FFMPEG VARIABLES", f"userset {user_id} ffvar")
+        elif option in user_dict and user_dict[option]:
+            buttons.data_button("FFMPEG VARIABLES", f"userset {user_id} ffvar")
     if option in leech_options:
         back_to = "leech"
     elif option in rclone_options:
@@ -763,15 +775,81 @@ async def get_menu(option, message, user_id):
     elif option == "LEECH_SPLIT_SIZE":
         val = get_readable_file_size(val)
     text = f"""⌬ <b><u>Menu Settings :</u></b>
-│
+
 ╭ <b>Option</b> → {option}
-|
 ├ <b>Option's Value</b> → {val if val else "<b>Not Exists</b>"}
-|
 ├ <b>Default Input Type</b> → {user_settings_text[option][0]}
 ╰ <b>Description</b> → {user_settings_text[option][1]}
 """
     await edit_message(message, text, buttons.build_menu(2))
+
+async def set_ffmpeg_variable(_, message, key, value, index):
+    user_id = message.from_user.id
+    handler_dict[user_id] = False
+    txt = message.text
+    user_dict = user_data.setdefault(user_id, {})
+    ffvar_data = user_dict.setdefault("FFMPEG_VARIABLES", {})
+    ffvar_data = ffvar_data.setdefault(key, {})
+    ffvar_data = ffvar_data.setdefault(index, {})
+    ffvar_data[value] = txt
+    await delete_message(message)
+    await database.update_user_data(user_id)
+
+
+async def ffmpeg_variables(
+    client, query, message, user_id, key=None, value=None, index=None
+):
+    user_dict = user_data.get(user_id, {})
+    ffc = None
+    if user_dict.get("FFMPEG_CMDS", False):
+        ffc = user_dict["FFMPEG_CMDS"]
+    elif "FFMPEG_CMDS" not in user_dict and Config.FFMPEG_CMDS:
+        ffc = Config.FFMPEG_CMDS
+    if ffc:
+        buttons = ButtonMaker()
+        if key is None:
+            msg = "Choose which key you want to fill/edit varibales in it:"
+            for k, v in list(ffc.items()):
+                add = False
+                for l in v:
+                    if variables := findall(r"\{(.*?)\}", l):
+                        add = True
+                if add:
+                    buttons.data_button(k, f"userset {user_id} ffvar {k}")
+            buttons.data_button("Back", f"userset {user_id} menu FFMPEG_CMDS")
+            buttons.data_button("Close", f"userset {user_id} close")
+        elif key in ffc and value is None:
+            msg = f"Choose which variable you want to fill/edit: <u>{key}</u>\n\nCMDS:\n{ffc[key]}"
+            for ind, vl in enumerate(ffc[key]):
+                if variables := set(findall(r"\{(.*?)\}", vl)):
+                    for var in variables:
+                        buttons.data_button(
+                            var, f"userset {user_id} ffvar {key} {var} {ind}"
+                        )
+            buttons.data_button(
+                "Reset", f"userset {user_id} ffvar {key} ffmpegvarreset"
+            )
+            buttons.data_button("Back", f"userset {user_id} ffvar")
+            buttons.data_button("Close", f"userset {user_id} close")
+        elif key in ffc and value:
+            old_value = (
+                user_dict.get("FFMPEG_VARIABLES", {})
+                .get(key, {})
+                .get(index, {})
+                .get(value, "")
+            )
+            msg = f"Edit/Fill this FFmpeg Variable: <u>{key}</u>\n\nItem: {ffc[key][int(index)]}\n\nVariable: {value}"
+            if old_value:
+                msg += f"\n\nCurrent Value: {old_value}"
+            buttons.data_button("Back", f"userset {user_id} setevent")
+            buttons.data_button("Close", f"userset {user_id} close")
+        else:
+            return
+        await edit_message(message, msg, buttons.build_menu(2))
+        if key in ffc and value:
+            pfunc = partial(set_ffmpeg_variable, key=key, value=value, index=index)
+            await event_handler(client, query, pfunc)
+            await ffmpeg_variables(client, query, message, user_id, key)
 
 
 async def event_handler(client, query, pfunc, rfunc, photo=False, document=False):
@@ -874,6 +952,20 @@ async def edit_user_settings(client, query):
             photo=data[3] == "THUMBNAIL",
             document=data[3] != "THUMBNAIL",
         )
+    elif data[2] == "ffvar":
+        await query.answer()
+        key = data[3] if len(data) > 3 else None
+        value = data[4] if len(data) > 4 else None
+        if value == "ffmpegvarreset":
+            user_dict = user_data.get(user_id, {})
+            ff_data = user_dict.get("FFMPEG_VARIABLES", {})
+            if key in ff_data:
+                del ff_data[key]
+                await database.update_user_data(user_id)
+            return
+        index = data[5] if len(data) > 5 else None
+        await ffmpeg_variables(client, query, message, user_id, key, value, index)
+
     elif data[2] in ["set", "addone", "rmone"]:
         await query.answer()
         buttons = ButtonMaker()

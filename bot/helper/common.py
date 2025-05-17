@@ -2,9 +2,10 @@ import re
 from asyncio import gather, sleep
 from contextlib import suppress
 from os import path as ospath, walk
-from re import sub
+from re import sub, findall
 from secrets import token_hex
 from shlex import split
+from collections import Counter
 
 from aiofiles.os import listdir, makedirs, remove, path as aiopath
 from aioshutil import move, rmtree
@@ -246,22 +247,32 @@ class TaskConfig:
         if self.ffmpeg_cmds and not isinstance(self.ffmpeg_cmds, list):
             if self.user_dict.get("FFMPEG_CMDS", None):
                 ffmpeg_dict = self.user_dict["FFMPEG_CMDS"]
-                self.ffmpeg_cmds = [
-                    value
-                    for key in list(self.ffmpeg_cmds)
-                    if key in ffmpeg_dict
-                    for value in ffmpeg_dict[key]
-                ]
             elif "FFMPEG_CMDS" not in self.user_dict and Config.FFMPEG_CMDS:
                 ffmpeg_dict = Config.FFMPEG_CMDS
-                self.ffmpeg_cmds = [
-                    value
-                    for key in list(self.ffmpeg_cmds)
-                    if key in ffmpeg_dict
-                    for value in ffmpeg_dict[key]
-                ]
             else:
-                self.ffmpeg_cmds = None
+                                ffmpeg_dict = None
+            if ffmpeg_dict is None:
+                self.ffmpeg_cmds = ffmpeg_dict
+            else:
+                cmds = []
+                for key in list(self.ffmpeg_cmds):
+                    if isinstance(key, list):
+                        cmds.extend(key)
+                    elif key in ffmpeg_dict.keys():
+                        for ind, vl in enumerate(ffmpeg_dict[key]):
+                            if variables := set(findall(r"\{(.*?)\}", vl)):
+                                ff_values = (
+                                    self.user_dict.get("FFMPEG_VARIABLES", {})
+                                    .get(key, {})
+                                    .get(str(ind), {})
+                                )
+                                if Counter(list(variables)) == Counter(
+                                    list(ff_values.keys())
+                                ):
+                                    cmds.append(vl.format(**ff_values))
+                            else:
+                                cmds.append(vl)
+                self.ffmpeg_cmds = cmds
 
         if not self.is_leech:
             self.stop_duplicate = (

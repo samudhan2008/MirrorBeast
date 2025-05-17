@@ -5,7 +5,7 @@ from json import loads
 from lxml.etree import HTML
 from os import path as ospath
 from re import findall, match, search
-from requests import Session, post, get, RequestException
+from requests import Session, post, get
 from requests.adapters import HTTPAdapter
 from time import sleep
 from urllib.parse import parse_qs, urlparse, quote
@@ -264,7 +264,6 @@ def buzzheavier(url):
         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
     finally:
         session.close()
-
 
 def fuckingfast_dl(url):
     """
@@ -530,8 +529,8 @@ def onedrive(link):
 
 def pixeldrain(url):
     try:
-        url = url.rstrip('/')
-        code = url.split('/')[-1].split('?', 1)[0]
+        url = url.rstrip("/")
+        code = url.split("/")[-1].split("?", 1)[0]
         response = get("https://pd.cybar.xyz/", allow_redirects=True)
         return response.url + code
     except Exception as e:
@@ -1775,7 +1774,7 @@ def swisstransfer(link):
         headers = {
             "User-Agent": "Mozilla/5.0",
             "Authorization": encode_password(password) if password else "",
-            "Content-Type": "application/json" if not password else "",
+            "Content-Type": "" if password else "application/json",
         }
         response = get(url, headers=headers)
 
