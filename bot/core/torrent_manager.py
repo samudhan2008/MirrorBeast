@@ -85,7 +85,7 @@ class TorrentManager:
         await cls.pause_all()
         tasks = [cls.aria2.purgeDownloadResult()]
         if cls.qbittorrent:
-            tasks.append(cls.qbittorrent.torrents.delete("all", True))
+            tasks.append(cls.qbittorrent.torrents.delete("all", False))
         await gather(*tasks)
 
         downloads = []
