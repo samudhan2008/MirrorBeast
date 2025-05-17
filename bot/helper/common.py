@@ -6,6 +6,7 @@ from re import sub, findall
 from secrets import token_hex
 from shlex import split
 from collections import Counter
+from copy import deepcopy
 
 from aiofiles.os import listdir, makedirs, remove, path as aiopath
 from aioshutil import move, rmtree
@@ -246,9 +247,9 @@ class TaskConfig:
 
         if self.ffmpeg_cmds and not isinstance(self.ffmpeg_cmds, list):
             if self.user_dict.get("FFMPEG_CMDS", None):
-                ffmpeg_dict = self.user_dict["FFMPEG_CMDS"]
+                ffmpeg_dict = deepcopy(self.user_dict["FFMPEG_CMDS"])
             elif "FFMPEG_CMDS" not in self.user_dict and Config.FFMPEG_CMDS:
-                ffmpeg_dict = Config.FFMPEG_CMDS
+                ffmpeg_dict = deepcopy(Config.FFMPEG_CMDS)
             else:
                                 ffmpeg_dict = None
             if ffmpeg_dict is None:

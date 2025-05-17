@@ -26,7 +26,6 @@ from .restart import (
     restart_bot,
     restart_notification,
     confirm_restart,
-    restart_sessions,
 )
 from .imdb import imdb_search, imdb_callback
 from .rss import get_rss_menu, rss_listener
@@ -74,7 +73,6 @@ __all__ = [
     "restart_bot",
     "restart_notification",
     "confirm_restart",
-    "restart_sessions",
     "imdb_search",
     "imdb_callback",
     "get_rss_menu",

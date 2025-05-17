@@ -35,19 +35,6 @@ async def restart_bot(_, message):
     )
 
 
-@new_task
-async def restart_sessions(_, message):
-    buttons = button_build.ButtonMaker()
-    buttons.data_button("Yes!", "sessionrestart confirm")
-    buttons.data_button("No!", "sessionrestart cancel")
-    button = buttons.build_menu(2)
-    await send_message(
-        message,
-        "<i>Are you really sure you want to restart the session(s) ?!</>",
-        button,
-    )
-
-
 async def send_incomplete_task_message(cid, msg_id, msg):
     try:
         if msg.startswith("⌬ <b><i>Restarted Successfully!</i></b>"):
@@ -82,6 +69,7 @@ async def restart_notification():
         if notifier_dict := await database.get_incomplete_tasks():
             for cid, data in notifier_dict.items():
                 msg = f"""⌬ <b><i>{"Restarted Successfully!" if cid == chat_id else "Bot Restarted!"}</i></b>
+
 ╭ <b>Date:</b> {now.strftime("%d/%m/%y")}
 ├ <b>Time:</b> {now.strftime("%I:%M:%S %p")}
 ├ <b>TimeZone:</b> Asia/Kolkata
@@ -102,6 +90,7 @@ async def restart_notification():
                 chat_id=chat_id,
                 message_id=msg_id,
                 text=f"""⌬ <b><i>Restarted Successfully!</i></b>
+
 ╭ <b>Date:</b> {now.strftime("%d/%m/%y")}
 ├ <b>Time:</b> {now.strftime("%I:%M:%S %p")}
 ├ <b>TimeZone:</b> Asia/Kolkata
