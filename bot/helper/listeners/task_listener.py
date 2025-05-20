@@ -90,18 +90,17 @@ class TaskListener(TaskConfig):
             self.pm_msg = await send_message(
                 self.user_id,
                 f"""➲ <b><u>Task Started :</u></b>
-┃
-╰ <b>Link:</b> <a href='{self.source_url}'>Click Here</a>
+➲ <b>Link:</b> <a href='{self.source_url}'>Click Here</a>
 """,
             )
         if Config.LINKS_LOG_ID:
             await send_message(
                 Config.LINKS_LOG_ID,
                 f"""➲  <b><u>{mode_name} Started:</u></b>
- ┃
- ┠ <b>User :</b> {self.tag} ( #ID{self.user_id} )
- ┠ <b>Message Link :</b> <a href='{self.message.link}'>Click Here</a>
- ┗ <b>Link:</b> <a href='{self.source_url}'>Click Here</a>
+ 
+ ╭ <b>User :</b> {self.tag} ( #ID{self.user_id} )
+ ├ <b>Message Link :</b> <a href='{self.message.link}'>Click Here</a>
+ ╰ <b>Link:</b> <a href='{self.source_url}'>Click Here</a>
  """,
             )
         if (
@@ -366,8 +365,7 @@ class TaskListener(TaskConfig):
                 pmsg += "⋗ <i>File(s) have been sent to User PM</i>\n\n"
                 if self.is_super_chat:
                     await send_message(self.message, pmsg)
-
-            if not files and not self.is_super_chat:
+            elif not files and not self.is_super_chat:
                 await send_message(self.message, msg)
             else:
                 log_chat = self.user_id if self.bot_pm else self.message
@@ -391,10 +389,10 @@ class TaskListener(TaskConfig):
                 if fmsg != "":
                     await send_message(log_chat, msg + fmsg)
         else:
-            msg += f"\n\n╭ <b>Type</b> → {mime_type}"
+            msg += f"\n╰ <b>Type</b> → {mime_type}"
             if mime_type == "Folder":
-                msg += f"\n├ <b>SubFolders</b> → {folders}"
-                msg += f"\n├ <b>Files</b> → {files}"
+                msg += f"\n╭ <b>SubFolders</b> → {folders}"
+                msg += f"\n╰ <b>Files</b> → {files}"
             if (
                 link
                 or rclone_path
@@ -410,7 +408,6 @@ class TaskListener(TaskConfig):
                     remote, rpath = rclone_path.split(":", 1)
                     url_path = rutils.quote(f"{rpath}")
                     share_url = f"{Config.RCLONE_SERVE_URL}/{url_path}"
-                     # Redirect to index page instead of direct download
                     if mime_type == "Folder" or not share_url.endswith("/"):
                         share_url = share_url.rstrip("/")
                     buttons.url_button("🔗 Rclone Link", share_url)
@@ -428,23 +425,37 @@ class TaskListener(TaskConfig):
                             buttons.url_button("🌐 View Link", share_urls)
                 button = buttons.build_menu(2)
             else:
-                msg += f"\n┃\n├ Path: <code>{rclone_path}</code>"
+                msg += f"\n├ Path: <code>{rclone_path}</code>"
                 button = None
-            msg += f"\n┃\n╰ <b>Task By</b> → {self.tag}"
-            await send_message(self.message, msg, button)
-            msg += f"\n┃\n┖ <b>Task By</b> → {self.tag}\n\n"
+
+            complete_msg = f"{msg}\n\n➾ <b>Task By</b> → {self.tag}\n\n"
             group_msg = (
-                msg + "〶 <b><u>Action Performed :</u></b>\n"
+                complete_msg + "〶 <b><u>Action Performed :</u></b>\n"
                 "⋗ <i>Cloud link(s) have been sent to User PM</i>\n\n"
             )
 
-            if self.bot_pm and self.is_super_chat:
+            chat_type = self.message.chat.type
+            chat_type_str = str(chat_type)
+            if hasattr(chat_type, 'value'):
+                chat_type_str = chat_type.value
+            chat_type_str = chat_type_str.lower()
+            is_private_chat = chat_type_str == "private"
+            is_group_chat = chat_type_str in ("group", "supergroup")
+            if self.bot_pm and is_group_chat:
+                await send_message(self.message, group_msg)
                 await send_message(self.user_id, msg, button)
+            elif self.bot_pm and is_private_chat:
+                await send_message(self.user_id, msg, button)
+            elif not self.bot_pm and is_group_chat:
+                await send_message(self.message, complete_msg, button)
+            elif not self.bot_pm and is_private_chat:
+                await send_message(self.message, msg, button)
+            else:
+                await send_message(self.message, complete_msg, button)
 
             if hasattr(Config, "MIRROR_LOG_ID") and Config.MIRROR_LOG_ID:
-                await send_message(Config.MIRROR_LOG_ID, msg, button)
+                await send_message(Config.MIRROR_LOG_ID, complete_msg, button)
 
-            await send_message(self.message, group_msg, button)
         if self.seed:
             await clean_target(self.up_dir)
             async with queue_dict_lock:
