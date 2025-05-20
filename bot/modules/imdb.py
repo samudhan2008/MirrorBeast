@@ -233,7 +233,7 @@ async def imdb_callback(_, query):
         buttons.data_button("🚫 Close 🚫", f"imdb {user_id} close")
         buttons = buttons.build_menu(1)
         template = Config.IMDB_TEMPLATE or ""
-        cap = template.format(**imdb_data, **locals()) if imdb_data and template else "No Results"
+        cap = template.format(**imdb_data) if imdb_data and template else "No Results"
         poster = imdb_data.get("poster")
         reply_to = getattr(message, "reply_to_message", None)
         if poster:
