@@ -453,8 +453,12 @@ class TaskListener(TaskConfig):
             else:
                 await send_message(self.message, complete_msg, button)
 
-            if hasattr(Config, "MIRROR_LOG_ID") and Config.MIRROR_LOG_ID:
-                await send_message(Config.MIRROR_LOG_ID, complete_msg, button)
+            mirror_log_id = getattr(Config, "MIRROR_LOG_ID", None)
+            if mirror_log_id:
+                try:
+                    await send_message(mirror_log_id, complete_msg, button)
+                except Exception as e:
+                    LOGGER.error(f"[TaskListener] Failed to send to MIRROR_LOG_ID: {mirror_log_id} - {e}")
 
         if self.seed:
             await clean_target(self.up_dir)
