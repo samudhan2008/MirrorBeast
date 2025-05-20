@@ -137,16 +137,26 @@ class TelegramUploader:
                 return False
 
         elif self._user_session:
-            self._sent_msg = await TgClient.user.get_messages(
-                chat_id=self._listener.message.chat.id, message_ids=self._listener.mid
-            )
-            if self._sent_msg is None:
-                self._sent_msg = await TgClient.user.send_message(
-                    chat_id=self._listener.message.chat.id,
-                    text="Deleted Cmd Message! Don't delete the cmd message again!",
-                    disable_web_page_preview=True,
-                    disable_notification=True,
+            try:
+                self._sent_msg = await TgClient.user.get_messages(
+                    chat_id=self._listener.message.chat.id, message_ids=self._listener.mid
                 )
+                if self._sent_msg is None:
+                    raise ValueError("Message not found")
+            except (Exception,) as e:
+                # Handle invalid channel/chat or message not found
+                from pyrogram.errors import ChannelInvalid
+                if isinstance(e, (ChannelInvalid, KeyError, ValueError)):
+                    # Fallback: send a new message to the user
+                    self._sent_msg = await TgClient.user.send_message(
+                        chat_id=self._listener.user_id,
+                        text="Could not access the original chat/message. Upload will continue here.",
+                        disable_web_page_preview=True,
+                        disable_notification=True,
+                    )
+                else:
+                    await self._listener.on_upload_error(str(e))
+                    return False
         else:
             self._sent_msg = self._listener.message
         return True
