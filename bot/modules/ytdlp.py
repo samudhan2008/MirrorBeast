@@ -29,9 +29,11 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
 )
 
-
 @new_task
 async def select_format(_, query, obj):
+    """
+    Handles button interactions for selecting YouTube download format/quality.
+    """
     data = query.data.split()
     message = query.message
     await query.answer()
@@ -64,8 +66,10 @@ async def select_format(_, query, obj):
             obj.qual = data[1]
         obj.event.set()
 
-
 class YtSelection:
+    """
+    Presents an interactive quality/format selector for yt-dlp downloads.
+    """
     def __init__(self, listener):
         self.listener = listener
         self._is_m4a = False
@@ -98,17 +102,18 @@ class YtSelection:
 
     async def get_quality(self, result):
         buttons = ButtonMaker()
-        if "entries" in result:
+        if "entries" in result:  # Playlist case
             self._is_playlist = True
             for i in ["144", "240", "360", "480", "720", "1080", "1440", "2160"]:
-                video_format = f"bv*[height<=?{i}][ext=mp4]+ba[ext=m4a]/b[height<=?{i}]"
-                b_data = f"{i}|mp4"
-                self.formats[b_data] = video_format
-                buttons.data_button(f"{i}-mp4", f"ytq {b_data}")
-                video_format = f"bv*[height<=?{i}][ext=webm]+ba/b[height<=?{i}]"
-                b_data = f"{i}|webm"
-                self.formats[b_data] = video_format
-                buttons.data_button(f"{i}-webm", f"ytq {b_data}")
+                for ext in ("mp4", "webm"):
+                    video_format = (
+                        f"bv*[height<=?{i}][ext={ext}]+ba[ext=m4a]/b[height<=?{i}]"
+                        if ext == "mp4"
+                        else f"bv*[height<=?{i}][ext=webm]+ba/b[height<=?{i}]"
+                    )
+                    b_data = f"{i}|{ext}"
+                    self.formats[b_data] = video_format
+                    buttons.data_button(f"{i}-{ext}", f"ytq {b_data}")
             buttons.data_button("MP3", "ytq mp3")
             buttons.data_button("Audio Formats", "ytq audio")
             buttons.data_button("Best Videos", "ytq bv*+ba/b")
@@ -122,14 +127,7 @@ class YtSelection:
                 for item in format_dict:
                     if item.get("tbr"):
                         format_id = item["format_id"]
-
-                        if item.get("filesize"):
-                            size = item["filesize"]
-                        elif item.get("filesize_approx"):
-                            size = item["filesize_approx"]
-                        else:
-                            size = 0
-
+                        size = item.get("filesize") or item.get("filesize_approx", 0)
                         if item.get("video_ext") == "none" and (
                             item.get("resolution") == "audio only"
                             or item.get("acodec") != "none"
@@ -141,7 +139,7 @@ class YtSelection:
                         elif item.get("height"):
                             height = item["height"]
                             ext = item["ext"]
-                            fps = item["fps"] if item.get("fps") else ""
+                            fps = item.get("fps", "")
                             b_name = f"{height}p{fps}-{ext}"
                             ba_ext = (
                                 "[ext=m4a]" if self._is_m4a and ext == "mp4" else ""
@@ -149,12 +147,10 @@ class YtSelection:
                             v_format = f"{format_id}+ba{ba_ext}/b[height=?{height}]"
                         else:
                             continue
-
-                        self.formats.setdefault(b_name, {})[f"{item['tbr']}"] = [
+                        self.formats.setdefault(b_name, {})[str(item["tbr"])] = [
                             size,
                             v_format,
                         ]
-
                 for b_name, tbr_dict in self.formats.items():
                     if len(tbr_dict) == 1:
                         tbr, v_list = next(iter(tbr_dict.items()))
@@ -178,10 +174,11 @@ class YtSelection:
         return self.qual
 
     async def back_to_main(self):
-        if self._is_playlist:
-            msg = f"Choose Playlist Videos Quality:\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
-        else:
-            msg = f"Choose Video Quality:\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
+        msg = (
+            f"Choose Playlist Videos Quality:\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
+            if self._is_playlist
+            else f"Choose Video Quality:\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
+        )
         await edit_message(self._reply_to, msg, self._main_buttons)
 
     async def qual_subbuttons(self, b_name):
@@ -230,9 +227,8 @@ class YtSelection:
         buttons.data_button("Back", "ytq aq back")
         buttons.data_button("Cancel", "ytq aq cancel")
         subbuttons = buttons.build_menu(5)
-        msg = f"Choose Audio{i} Qaulity:\n0 is best and 10 is worst\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
+        msg = f"Choose Audio{i} Quality:\n0 is best and 10 is worst\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
         await edit_message(self._reply_to, msg, subbuttons)
-
 
 def extract_info(link, options):
     with YoutubeDL(options) as ydl:
@@ -240,7 +236,6 @@ def extract_info(link, options):
         if result is None:
             raise ValueError("Info result is None")
         return result
-
 
 async def _mdisk(link, name):
     key = link.split("/")[-1]
@@ -250,13 +245,15 @@ async def _mdisk(link, name):
         )
     if resp.status_code == 200:
         resp_json = resp.json()
-        link = resp_json["source"]
+        link = resp_json.get("source", link)
         if not name:
-            name = resp_json["filename"]
+            name = resp_json.get("filename", name)
     return name, link
 
-
 class YtDlp(TaskListener):
+    """
+    Handles all logic for yt-dlp-based downloads (YouTube and many others).
+    """
     def __init__(
         self,
         client,
@@ -270,17 +267,15 @@ class YtDlp(TaskListener):
         multi_tag=None,
         options="",
     ):
-        if same_dir is None:
-            same_dir = {}
-        if bulk is None:
-            bulk = []
+        if same_dir is None: same_dir = {}
+        if bulk is None: bulk = []
+        super().__init__()
         self.message = message
         self.client = client
         self.multi_tag = multi_tag
         self.options = options
         self.same_dir = same_dir
         self.bulk = bulk
-        super().__init__()
         self.is_ytdlp = True
         self.is_leech = is_leech
 
@@ -288,7 +283,6 @@ class YtDlp(TaskListener):
         text = self.message.text.split("\n")
         input_list = text[0].split(" ")
         qual = ""
-
         check_msg, check_button = await pre_task_check(self.message)
         if check_msg:
             await delete_links(self.message)
@@ -298,58 +292,29 @@ class YtDlp(TaskListener):
             return
 
         args = {
-            "-doc": False,
-            "-med": False,
-            "-s": False,
-            "-b": False,
-            "-z": False,
-            "-sv": False,
-            "-ss": False,
-            "-f": False,
-            "-fd": False,
-            "-fu": False,
-            "-hl": False,
-            "-bt": False,
-            "-ut": False,
-            "-i": 0,
-            "-sp": 0,
-            "link": "",
-            "-m": "",
-            "-opt": {},
-            "-n": "",
-            "-up": "",
-            "-rcf": "",
-            "-t": "",
-            "-ca": "",
-            "-cv": "",
-            "-ns": "",
-            "-tl": "",
-            "-ff": set(),
+            "-doc": False, "-med": False, "-s": False, "-b": False, "-z": False,
+            "-sv": False, "-ss": False, "-f": False, "-fd": False, "-fu": False,
+            "-hl": False, "-bt": False, "-ut": False, "-i": 0, "-sp": 0, "link": "",
+            "-m": "", "-opt": {}, "-n": "", "-up": "", "-rcf": "", "-t": "",
+            "-ca": "", "-cv": "", "-ns": "", "-tl": "", "-ff": set(),
         }
-
         arg_parser(input_list[1:], args)
 
         if Config.DISABLE_FF_MODE and args.get("-ff"):
             await send_message(self.message, "FFmpeg commands are currently disabled.")
             return
 
-        try:
-            self.multi = int(args["-i"])
-        except Exception:
-            self.multi = 0
+        try: self.multi = int(args["-i"])
+        except Exception: self.multi = 0
 
         try:
             if args["-ff"]:
-                if isinstance(args["-ff"], set):
-                    self.ffmpeg_cmds = args["-ff"]
-                else:
-                    self.ffmpeg_cmds = eval(args["-ff"])
+                self.ffmpeg_cmds = args["-ff"] if isinstance(args["-ff"], set) else eval(args["-ff"])
         except Exception as e:
             self.ffmpeg_cmds = None
             LOGGER.error(e)
 
-        try:
-            opt = eval(args["-opt"]) if args["-opt"] else {}
+        try: opt = eval(args["-opt"]) if args["-opt"] else {}
         except Exception as e:
             LOGGER.error(e)
             opt = {}
@@ -374,23 +339,22 @@ class YtDlp(TaskListener):
         self.thumbnail_layout = args["-tl"]
         self.as_doc = args["-doc"]
         self.as_med = args["-med"]
-        self.folder_name = f"/{args["-m"]}".rstrip("/") if len(args["-m"]) > 0 else ""
+        self.folder_name = f"/{args['-m']}".rstrip("/") if args["-m"] else ""
         self.bot_trans = args["-bt"]
         self.user_trans = args["-ut"]
 
         is_bulk = args["-b"]
-
         bulk_start = 0
         bulk_end = 0
-        reply_to = None
 
-        if not isinstance(is_bulk, bool):
+        if not isinstance(is_bulk, bool) and is_bulk:
             dargs = is_bulk.split(":")
             bulk_start = dargs[0] or None
             if len(dargs) == 2:
                 bulk_end = dargs[1] or None
             is_bulk = True
 
+        # Multi dir logic
         if not is_bulk:
             if self.multi > 0:
                 if self.folder_name:
@@ -423,7 +387,7 @@ class YtDlp(TaskListener):
             await self.init_bulk(input_list, bulk_start, bulk_end, YtDlp)
             return
 
-        if len(self.bulk) != 0:
+        if self.bulk:
             del self.bulk[0]
 
         path = f"{DOWNLOAD_DIR}{self.mid}{self.folder_name}"
@@ -493,10 +457,8 @@ class YtDlp(TaskListener):
         await delete_links(self.message)
         await ydl.add_download(path, qual, playlist, opt)
 
-
 async def ytdl(client, message):
     bot_loop.create_task(YtDlp(client, message).new_event())
-
 
 async def ytdl_leech(client, message):
     bot_loop.create_task(YtDlp(client, message, is_leech=True).new_event())

@@ -49,90 +49,98 @@ IMDB_GENRE_EMOJI = {
 }
 LIST_ITEMS = 4
 
+def safe_int(val, default=None):
+    try:
+        return int(val)
+    except Exception:
+        return default
 
-async def imdb_search(_, message):
-    if " " in message.text:
-        k = await send_message(message, "<i>Searching IMDB ...</i>")
-        title = message.text.split(" ", 1)[1]
-        user_id = message.from_user.id
-        buttons = ButtonMaker()
-        if result := search(r"imdb\.com/title/tt(\d+)", title, IGNORECASE):
-            movieid = result.group(1)
-            if movie := imdb.get_movie(movieid):
-                buttons.data_button(
-                    f"🎬 {movie.get('title')} ({movie.get('year')})",
-                    f"imdb {user_id} movie {movieid}",
-                )
-            else:
-                return await edit_message(k, "<i>No Results Found</i>")
-        else:
-            movies = get_poster(title, bulk=True)
-            if not movies:
-                return edit_message(
-                    "<i>No Results Found</i>, Try Again or Use <b>Title ID</b>", k
-                )
-            for movie in movies:  # Refurbished Soon !!
-                buttons.data_button(
-                    f"🎬 {movie.get('title')} ({movie.get('year')})",
-                    f"imdb {user_id} movie {movie.movieID}",
-                )
-        buttons.data_button("🚫 Close 🚫", f"imdb {user_id} close")
-        await edit_message(
-            k, "<b><i>Search Results found on IMDb.com</i></b>", buttons.build_menu(1)
-        )
-    else:
-        await send_message(
-            message,
-            "<i>Send Movie / TV Series Name along with /imdb Command or send IMDB URL</i>",
-        )
+def safe_str(val, default=""):
+    return str(val) if val else default
 
+def safe_list(val):
+    return val if isinstance(val, list) else ([val] if val else [])
+
+def list_to_str(k):
+    if not k:
+        return ""
+    k = safe_list(k)
+    if len(k) == 1:
+        return safe_str(k[0])
+    if LIST_ITEMS:
+        k = k[:LIST_ITEMS]
+        return " ".join(f"{elem}," for elem in k)[:-1] + " ..."
+    return " ".join(f"{elem}," for elem in k)[:-1]
+
+def list_to_hash(k, flagg=False, emoji=False):
+    k = safe_list(k)
+    listing = ""
+    if not k:
+        return ""
+    if len(k) == 1:
+        elem = k[0]
+        ele = elem.replace(" ", "_").replace("-", "_")
+        if flagg:
+            try:
+                conflag = (conn.get(name=elem)).flag
+                return f"{conflag} #{ele}"
+            except Exception:
+                return f"#{ele}"
+        if emoji:
+            return f"{IMDB_GENRE_EMOJI.get(elem, '')} #{ele}"
+        return f"#{ele}"
+    # Multiple items
+    k = k[:LIST_ITEMS] if LIST_ITEMS else k
+    for elem in k:
+        ele = elem.replace(" ", "_").replace("-", "_")
+        if flagg:
+            with suppress(AttributeError):
+                conflag = (conn.get(name=elem)).flag
+                listing += f"{conflag} "
+        if emoji:
+            listing += f"{IMDB_GENRE_EMOJI.get(elem, '')} "
+        listing += f"#{ele}, "
+    return listing[:-2]
+
+def get_movie_year(query, file=None):
+    query = (query.strip()).lower()
+    year = findall(r"[1-2]\d{3}$", query, IGNORECASE)
+    if year:
+        return list_to_str(year[:1]), (query.replace(year[0], "")).strip()
+    elif file is not None:
+        year = findall(r"[1-2]\d{3}", file, IGNORECASE)
+        if year:
+            return list_to_str(year[:1]), query
+    return None, query
 
 def get_poster(query, bulk=False, id=False, file=None):
     if not id:
-        query = (query.strip()).lower()
-        title = query
-        year = findall(r"[1-2]\d{3}$", query, IGNORECASE)
-        if year:
-            year = list_to_str(year[:1])
-            title = (query.replace(year, "")).strip()
-        elif file is not None:
-            year = findall(r"[1-2]\d{3}", file, IGNORECASE)
-            if year:
-                year = list_to_str(year[:1])
-        else:
-            year = None
+        year, title = get_movie_year(query, file)
         movieid = imdb.search_movie(title.lower(), results=10)
         if not movieid:
             return None
-        if year:
-            filtered = (
-                list(filter(lambda k: str(k.get("year")) == str(year), movieid))
-                or movieid
-            )
-        else:
-            filtered = movieid
-        movieid = (
+        filtered = (
+            list(filter(lambda k: str(k.get("year")) == str(year), movieid))
+            or movieid
+        ) if year else movieid
+        filtered = (
             list(filter(lambda k: k.get("kind") in ["movie", "tv series"], filtered))
             or filtered
         )
         if bulk:
-            return movieid
-        movieid = movieid[0].movieID
+            return filtered
+        movieid = filtered[0].movieID
     else:
         movieid = query
     movie = imdb.get_movie(movieid)
-    if movie.get("original air date"):
-        date = movie["original air date"]
-    elif movie.get("year"):
-        date = movie.get("year")
-    else:
-        date = "N/A"
+    date = movie.get("original air date") or movie.get("year") or "N/A"
     plot = movie.get("plot")
     plot = plot[0] if plot and len(plot) > 0 else movie.get("plot outline")
     if plot and len(plot) > 300:
         plot = f"{plot[:300]}..."
+    # Defensive for missing keys
     return {
-        "title": movie.get("title"),
+        "title": movie.get("title", ""),
         "trailer": movie.get("videos"),
         "votes": movie.get("votes"),
         "aka": list_to_str(movie.get("akas")),
@@ -140,10 +148,10 @@ def get_poster(query, bulk=False, id=False, file=None):
         "box_office": movie.get("box office"),
         "localized_title": movie.get("localized title"),
         "kind": movie.get("kind"),
-        "imdb_id": f"tt{movie.get('imdbID')}",
+        "imdb_id": f"tt{movie.get('imdbID', movieid)}",
         "cast": list_to_str(movie.get("cast")),
         "runtime": list_to_str(
-            [get_readable_time(int(run) * 60) for run in movie.get("runtimes", "0")]
+            [get_readable_time(int(run) * 60) for run in movie.get("runtimes", ["0"])]
         ),
         "countries": list_to_hash(movie.get("countries"), True),
         "certificates": list_to_str(movie.get("certificates")),
@@ -160,64 +168,49 @@ def get_poster(query, bulk=False, id=False, file=None):
         "genres": list_to_hash(movie.get("genres"), emoji=True),
         "poster": movie.get("full-size cover url"),
         "plot": plot,
-        "rating": str(movie.get("rating")) + " / 10",
+        "rating": f"{movie.get('rating', '')} / 10",
         "url": f"https://www.imdb.com/title/tt{movieid}",
         "url_cast": f"https://www.imdb.com/title/tt{movieid}/fullcredits#cast",
         "url_releaseinfo": f"https://www.imdb.com/title/tt{movieid}/releaseinfo",
     }
 
-
-def list_to_str(k):
-    if not k:
-        return ""
-    elif len(k) == 1:
-        return str(k[0])
-    elif LIST_ITEMS:
-        k = k[: int(LIST_ITEMS)]
-        return " ".join(f"{elem}," for elem in k)[:-1] + " ..."
-    else:
-        return " ".join(f"{elem}," for elem in k)[:-1]
-
-
-def list_to_hash(k, flagg=False, emoji=False):
-    listing = ""
-    if not k:
-        return ""
-    elif len(k) == 1:
-        if not flagg:
-            if emoji:
-                return str(
-                    IMDB_GENRE_EMOJI.get(k[0], "")
-                    + " #"
-                    + k[0].replace(" ", "_").replace("-", "_")
+async def imdb_search(_, message):
+    if " " in message.text:
+        k = await send_message(message, "<i>Searching IMDb ...</i>")
+        title = message.text.split(" ", 1)[1]
+        user_id = message.from_user.id
+        buttons = ButtonMaker()
+        imdb_url_match = search(r"imdb\.com/title/tt(\d+)", title, IGNORECASE)
+        if imdb_url_match:
+            movieid = imdb_url_match.group(1)
+            movie = imdb.get_movie(movieid)
+            if movie:
+                buttons.data_button(
+                    f"🎬 {movie.get('title', '')} ({movie.get('year', '')})",
+                    f"imdb {user_id} movie {movieid}",
                 )
-            return str("#" + k[0].replace(" ", "_").replace("-", "_"))
-        try:
-            conflag = (conn.get(name=k[0])).flag
-            return str(f"{conflag} #" + k[0].replace(" ", "_").replace("-", "_"))
-        except AttributeError:
-            return str("#" + k[0].replace(" ", "_").replace("-", "_"))
-    elif LIST_ITEMS:
-        k = k[: int(LIST_ITEMS)]
-        for elem in k:
-            ele = elem.replace(" ", "_").replace("-", "_")
-            if flagg:
-                with suppress(AttributeError):
-                    conflag = (conn.get(name=elem)).flag
-                    listing += f"{conflag} "
-            if emoji:
-                listing += f"{IMDB_GENRE_EMOJI.get(elem, '')} "
-            listing += f"#{ele}, "
-        return f"{listing[:-2]}"
+            else:
+                return await edit_message(k, "<i>No Results Found</i>")
+        else:
+            movies = get_poster(title, bulk=True)
+            if not movies:
+                return await edit_message(
+                    k, "<i>No Results Found</i>, Try Again or Use <b>Title ID</b>"
+                )
+            for movie in movies:
+                buttons.data_button(
+                    f"🎬 {movie.get('title', '')} ({movie.get('year', '')})",
+                    f"imdb {user_id} movie {movie.movieID}",
+                )
+        buttons.data_button("🚫 Close 🚫", f"imdb {user_id} close")
+        await edit_message(
+            k, "<b><i>Search Results found on IMDb.com</i></b>", buttons.build_menu(1)
+        )
     else:
-        for elem in k:
-            ele = elem.replace(" ", "_").replace("-", "_")
-            if flagg:
-                conflag = (conn.get(name=elem)).flag
-                listing += f"{conflag} "
-            listing += f"#{ele}, "
-        return listing[:-2]
-
+        await send_message(
+            message,
+            "<i>Send Movie / TV Series Name along with /imdb Command or send IMDb URL</i>",
+        )
 
 async def imdb_callback(_, query):
     message = query.message
@@ -225,42 +218,39 @@ async def imdb_callback(_, query):
     data = query.data.split()
     if user_id != int(data[1]):
         await query.answer("Not Yours!", show_alert=True)
+        return
     elif data[2] == "movie":
         await query.answer()
-        imdb = get_poster(query=data[3], id=True)
+        imdb_data = get_poster(query=data[3], id=True)
         buttons = ButtonMaker()
-        if imdb["trailer"]:
-            if isinstance(imdb["trailer"], list):
-                buttons.url_button("▶️ IMDb Trailer ", imdb["trailer"][-1])
-                imdb["trailer"] = list_to_str(imdb["trailer"])
+        # Trailer button logic
+        if imdb_data.get("trailer"):
+            trailer = imdb_data["trailer"]
+            if isinstance(trailer, list):
+                buttons.url_button("▶️ IMDb Trailer ", trailer[-1])
             else:
-                buttons.url_button("▶️ IMDb Trailer ", imdb["trailer"])
+                buttons.url_button("▶️ IMDb Trailer ", trailer)
         buttons.data_button("🚫 Close 🚫", f"imdb {user_id} close")
         buttons = buttons.build_menu(1)
-        template = ""
-        # if int(data[1]) in user_data and user_data[int(data[1])].get('imdb_temp'):
-        #    template = user_data[int(data[1])].get('imdb_temp')
-        # if not template:
-        template = Config.IMDB_TEMPLATE
-        if imdb and template != "":
-            cap = template.format(**imdb, **locals())
-        else:
-            cap = "No Results"
-        if imdb.get("poster"):
+        template = Config.IMDB_TEMPLATE or ""
+        cap = template.format(**imdb_data, **locals()) if imdb_data and template else "No Results"
+        poster = imdb_data.get("poster")
+        reply_to = getattr(message, "reply_to_message", None)
+        if poster:
             try:
                 await TgClient.bot.send_photo(
-                    chat_id=query.message.reply_to_message.chat.id,
+                    chat_id=reply_to.chat.id,
                     caption=cap,
-                    photo=imdb["poster"],
-                    reply_to_message_id=query.message.reply_to_message.id,
+                    photo=poster,
+                    reply_to_message_id=reply_to.id,
                     reply_markup=buttons,
                 )
             except (MediaEmpty, PhotoInvalidDimensions, WebpageMediaEmpty):
-                poster = imdb.get("poster").replace(".jpg", "._V1_UX360.jpg")
-                await send_message(message.reply_to_message, cap, buttons, photo=poster)
+                poster = poster.replace(".jpg", "._V1_UX360.jpg")
+                await send_message(reply_to, cap, buttons, photo=poster)
         else:
             await send_message(
-                message.reply_to_message,
+                reply_to,
                 cap,
                 buttons,
                 "https://telegra.ph/file/5af8d90a479b0d11df298.jpg",
@@ -268,4 +258,4 @@ async def imdb_callback(_, query):
         await delete_message(message)
     else:
         await query.answer()
-        await delete_message(message, message.reply_to_message)
+        await delete_message(message, getattr(message, "reply_to_message", message))

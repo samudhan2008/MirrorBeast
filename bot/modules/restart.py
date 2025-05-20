@@ -1,4 +1,4 @@
-from asyncio import create_subprocess_exec, gather
+import asyncio
 from datetime import datetime
 from os import execl as osexecl
 from sys import executable
@@ -23,9 +23,9 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
 )
 
-
 @new_task
 async def restart_bot(_, message):
+    """Handler for /restart command: confirms bot restart."""
     buttons = button_build.ButtonMaker()
     buttons.data_button("Yes!", "botrestart confirm")
     buttons.data_button("No!", "botrestart cancel")
@@ -34,21 +34,21 @@ async def restart_bot(_, message):
         message, "<i>Are you really sure you want to restart the bot ?</i>", button
     )
 
-
 @new_task
 async def restart_sessions(_, message):
+    """Handler for session restart command: confirms session restart."""
     buttons = button_build.ButtonMaker()
     buttons.data_button("Yes!", "sessionrestart confirm")
     buttons.data_button("No!", "sessionrestart cancel")
     button = buttons.build_menu(2)
     await send_message(
         message,
-        "<i>Are you really sure you want to restart the session(s) ?!</>",
+        "<i>Are you really sure you want to restart the session(s)?</i>",
         button,
     )
 
-
 async def send_incomplete_task_message(cid, msg_id, msg):
+    """Send or edit message about incomplete tasks after restart."""
     try:
         if msg.startswith("⌬ <b><i>Restarted Successfully!</i></b>"):
             await TgClient.bot.edit_message_text(
@@ -66,58 +66,65 @@ async def send_incomplete_task_message(cid, msg_id, msg):
                 disable_notification=True,
             )
     except Exception as e:
-        LOGGER.error(e)
-
+        LOGGER.error(f"Error in send_incomplete_task_message: {e}")
 
 async def restart_notification():
+    """Send notifications after restart about incomplete tasks, handle .restartmsg logic."""
+    chat_id = msg_id = 0
     if await aiopath.isfile(".restartmsg"):
-        with open(".restartmsg") as f:
-            chat_id, msg_id = map(int, f)
-    else:
-        chat_id, msg_id = 0, 0
+        async with aiopen(".restartmsg") as f:
+            lines = [line.strip() for line in await f.readlines()]
+            if len(lines) >= 2:
+                chat_id, msg_id = map(int, lines[:2])
 
     now = datetime.now(timezone("Asia/Kolkata"))
 
     if Config.INCOMPLETE_TASK_NOTIFIER and Config.DATABASE_URL:
-        if notifier_dict := await database.get_incomplete_tasks():
-            for cid, data in notifier_dict.items():
-                msg = f"""⌬ <b><i>{"Restarted Successfully!" if cid == chat_id else "Bot Restarted!"}</i></b>
-╭ <b>Date:</b> {now.strftime("%d/%m/%y")}
-├ <b>Time:</b> {now.strftime("%I:%M:%S %p")}
-├ <b>TimeZone:</b> Asia/Kolkata
-╰ <b>Version:</b> {get_version()}"""
-                for tag, links in data.items():
-                    msg += f"\n\n{tag}: "
-                    for index, link in enumerate(links, start=1):
-                        msg += f" <a href='{link}'>{index}</a> |"
-                        if len(msg.encode()) > 4000:
-                            await send_incomplete_task_message(cid, msg_id, msg)
-                            msg = ""
-                if msg:
-                    await send_incomplete_task_message(cid, msg_id, msg)
+        notifier_dict = await database.get_incomplete_tasks() or {}
+        for cid, data in notifier_dict.items():
+            msg = (
+                f"⌬ <b><i>{'Restarted Successfully!' if cid == chat_id else 'Bot Restarted!'}</i></b>\n"
+                f"╭ <b>Date:</b> {now.strftime('%d/%m/%y')}\n"
+                f"├ <b>Time:</b> {now.strftime('%I:%M:%S %p')}\n"
+                f"├ <b>TimeZone:</b> Asia/Kolkata\n"
+                f"╰ <b>Version:</b> {get_version()}"
+            )
+            for tag, links in data.items():
+                msg += f"\n\n{tag}: "
+                for index, link in enumerate(links, start=1):
+                    msg += f" <a href='{link}'>{index}</a> |"
+                    if len(msg.encode()) > 4000:
+                        await send_incomplete_task_message(cid, msg_id, msg)
+                        msg = ""
+            if msg:
+                await send_incomplete_task_message(cid, msg_id, msg)
 
     if await aiopath.isfile(".restartmsg"):
         try:
             await TgClient.bot.edit_message_text(
                 chat_id=chat_id,
                 message_id=msg_id,
-                text=f"""⌬ <b><i>Restarted Successfully!</i></b>
-╭ <b>Date:</b> {now.strftime("%d/%m/%y")}
-├ <b>Time:</b> {now.strftime("%I:%M:%S %p")}
-├ <b>TimeZone:</b> Asia/Kolkata
-╰ <b>Version:</b> {get_version()}""",
+                text=(
+                    f"⌬ <b><i>Restarted Successfully!</i></b>\n"
+                    f"╭ <b>Date:</b> {now.strftime('%d/%m/%y')}\n"
+                    f"├ <b>Time:</b> {now.strftime('%I:%M:%S %p')}\n"
+                    f"├ <b>TimeZone:</b> Asia/Kolkata\n"
+                    f"╰ <b>Version:</b> {get_version()}"
+                ),
             )
         except Exception as e:
-            LOGGER.error(e)
+            LOGGER.error(f"restart_notification: {e}")
         await remove(".restartmsg")
-
 
 @new_task
 async def confirm_restart(_, query):
+    """
+    Handles callback for restart/cancel. Performs a full bot cleanup and restarts the process.
+    """
     await query.answer()
     data = query.data.split()
     message = query.message
-    reply_to = message.reply_to_message
+    reply_to = getattr(message, "reply_to_message", None)
     await delete_message(message)
     if data[1] == "confirm":
         intervals["stopAll"] = True
@@ -126,44 +133,41 @@ async def confirm_restart(_, query):
         await TgClient.stop()
         if scheduler.running:
             scheduler.shutdown(wait=False)
-        if qb := intervals["qb"]:
-            qb.cancel()
-        if jd := intervals["jd"]:
-            jd.cancel()
-        if nzb := intervals["nzb"]:
-            nzb.cancel()
-        if st := intervals["status"]:
+        for key in ("qb", "jd", "nzb"):
+            if intervals.get(key):
+                intervals[key].cancel()
+        if st := intervals.get("status"):
             for intvl in list(st.values()):
                 intvl.cancel()
         await clean_all()
         await TorrentManager.close_all()
         if sabnzbd_client.LOGGED_IN:
-            await gather(
+            await asyncio.gather(
                 sabnzbd_client.pause_all(),
                 sabnzbd_client.delete_job("all", True),
                 sabnzbd_client.purge_all(True),
                 sabnzbd_client.delete_history("all", delete_files=True),
+                sabnzbd_client.close(),
             )
-            await sabnzbd_client.close()
         if jdownloader.is_connected:
-            await gather(
+            await asyncio.gather(
                 jdownloader.device.downloadcontroller.stop_downloads(),
                 jdownloader.device.linkgrabber.clear_list(),
                 jdownloader.device.downloads.cleanup(
-                    "DELETE_ALL",
-                    "REMOVE_LINKS_AND_DELETE_FILES",
-                    "ALL",
+                    "DELETE_ALL", "REMOVE_LINKS_AND_DELETE_FILES", "ALL"
                 ),
+                jdownloader.close(),
             )
-            await jdownloader.close()
-        proc1 = await create_subprocess_exec(
-            "pkill",
-            "-9",
-            "-f",
-            f"gunicorn|{BinConfig.ARIA2_NAME}|{BinConfig.QBIT_NAME}|{BinConfig.FFMPEG_NAME}|{BinConfig.RCLONE_NAME}|java|{BinConfig.SABNZBD_NAME}|7z|split",
-        )
-        proc2 = await create_subprocess_exec("python3", "update.py")
-        await gather(proc1.wait(), proc2.wait())
+        kill_proc_cmd = [
+            "pkill", "-9", "-f",
+            f"gunicorn|{BinConfig.ARIA2_NAME}|{BinConfig.QBIT_NAME}|"
+            f"{BinConfig.FFMPEG_NAME}|{BinConfig.RCLONE_NAME}|java|"
+            f"{BinConfig.SABNZBD_NAME}|7z|split"
+        ]
+        update_cmd = ["python3", "update.py"]
+        proc1 = await asyncio.create_subprocess_exec(*kill_proc_cmd)
+        proc2 = await asyncio.create_subprocess_exec(*update_cmd)
+        await asyncio.gather(proc1.wait(), proc2.wait())
         async with aiopen(".restartmsg", "w") as f:
             await f.write(f"{restart_message.chat.id}\n{restart_message.id}\n")
         osexecl(executable, executable, "-m", "bot")

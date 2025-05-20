@@ -2,7 +2,7 @@ def get_version() -> str:
     """
     Returns the version details. Do not Interfere with this !
 
-    :return: The version details in the format 'vMAJOR.MINOR.PATCH-STATE'
+    :return: The version details in the format 'vMAJOR.MINOR'
     :rtype: str
     """
     MAJOR = "2"

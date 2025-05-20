@@ -1,3 +1,6 @@
+import os
+import random
+import importlib.util
 from psutil import cpu_percent, virtual_memory, disk_usage
 from time import time
 from asyncio import gather, iscoroutinefunction
@@ -33,13 +36,15 @@ from ..helper.telegram_helper.message_utils import (
     edit_message,
 )
 from ..helper.telegram_helper.button_build import ButtonMaker
-import os
-import random
-import importlib.util
 from ..core.config_manager import Config
 
 def get_owner_id():
-    # 1. Try to import from config.py if present
+    """
+    Resolve OWNER_ID with the following priority:
+    1. config.py in root directory
+    2. OWNER_ID environment variable
+    3. Config.OWNER_ID fallback
+    """
     config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.py')
     if os.path.exists(config_path):
         spec = importlib.util.spec_from_file_location('config', config_path)
@@ -50,20 +55,17 @@ def get_owner_id():
                 return config.OWNER_ID
         except Exception:
             pass
-    # 2. Try environment variable
     owner_id_env = os.getenv('OWNER_ID')
     if owner_id_env is not None:
         try:
             return int(owner_id_env)
         except ValueError:
             pass
-    # 3. Fallback to config_manager.py
     return getattr(Config, 'OWNER_ID', 0)
 
 OWNER_ID = get_owner_id()
 
-# Easter eggs for normal users (50)
-easter_eggs = [
+EASTER_EGGS = [
     "💀 <b><i>Stop it, Get Some Help!</i></b>",
     "☠️ <b><i>Bro… there’s nothing here.</i></b>",
     "🧠 <b><i>Empty. Just like your head.</i></b>",
@@ -115,8 +117,7 @@ easter_eggs = [
     "🌪️ <b><i>A whirlwind of inactivity.</i></b>"
 ]
 
-# Polite responses for owner (10)
-owner_responses = [
+OWNER_RESPONSES = [
     "✨ <b>Dear Master, there are no tasks currently running.</b>",
     "🙏 <b>My deepest respects, but nothing is in progress right now.</b>",
     "💎 <b>Everything’s clear at the moment, Boss.</b>",
@@ -131,32 +132,32 @@ owner_responses = [
 
 @new_task
 async def task_status(_, message):
+    """
+    Show current task status or bot stats if no task is running.
+    Fun responses for regular users, respectful for owner.
+    """
     async with task_dict_lock:
         count = len(task_dict)
 
     if count == 0:
-        currentTime = get_readable_time(time() - bot_start_time)
+        current_time = get_readable_time(time() - bot_start_time)
         free = get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)
 
-        # ✅ Check owner or normal user using imported OWNER_ID
-        if message.from_user.id == OWNER_ID:
-            response = random.choice(owner_responses)
-        else:
-            response = random.choice(easter_eggs)
+        is_owner = (message.from_user.id == OWNER_ID)
+        response = random.choice(OWNER_RESPONSES if is_owner else EASTER_EGGS)
 
-        msg = f"""{response}
-
-⌬ <b><u>Bot Stats</u></b>
-╭ <b>CPU</b> → {cpu_percent()}%
-├ <b>RAM</b> → {virtual_memory().percent}%
-├ <b>Free</b> → {free}
-╰ <b>UP</b> → {currentTime}
-"""
+        msg = (
+            f"{response}\n\n"
+            "⌬ <b><u>Bot Stats</u></b>\n"
+            f"╭ <b>CPU</b> → {cpu_percent()}%\n"
+            f"├ <b>RAM</b> → {virtual_memory().percent}%\n"
+            f"├ <b>Free</b> → {free}\n"
+            f"╰ <b>UP</b> → {current_time}\n"
+        )
         reply_message = await send_message(message, msg)
         await auto_delete_message(message, reply_message)
-
     else:
-        text = message.text.split()
+        text = message.text.split() if getattr(message, "text", None) else []
         if len(text) > 1:
             user_id = message.from_user.id if text[1] == "me" else int(text[1])
         else:
@@ -168,68 +169,53 @@ async def task_status(_, message):
         await send_status_message(message, user_id)
         await delete_message(message)
 
-
 async def get_download_status(download):
+    """
+    Get status and speed for a download task.
+    Returns: (status_str, speed, engine_str)
+    """
     eng = download.engine
-    speed = (
-        download.speed()
-        if eng.startswith(("Pyro", "yt-dlp", "RClone", "Google-API"))
-        else 0
-    )
-    return (
-        (
-            await download.status()
-            if iscoroutinefunction(download.status)
-            else download.status()
-        ),
-        speed,
-        eng,
-    )
-
+    speed = (download.speed() if eng.startswith(("Pyro", "yt-dlp", "RClone", "Google-API")) else 0)
+    status_func = download.status
+    status = (await status_func() if iscoroutinefunction(status_func) else status_func())
+    return status, speed, eng
 
 @new_task
 async def status_pages(_, query):
+    """
+    Handle status page callbacks (pagination, refresh, overview, etc).
+    """
     data = query.data.split()
     key = int(data[1])
-    if data[2] == "ref":
+    action = data[2]
+
+    if action == "ref":
         await update_status_message(key, force=True)
-    elif data[2] in ["nex", "pre"]:
+    elif action in ["nex", "pre"]:
         async with task_dict_lock:
             if key in status_dict:
-                if data[2] == "nex":
+                if action == "nex":
                     status_dict[key]["page_no"] += status_dict[key]["page_step"]
                 else:
                     status_dict[key]["page_no"] -= status_dict[key]["page_step"]
-    elif data[2] == "ps":
+    elif action == "ps":
         async with task_dict_lock:
             if key in status_dict:
                 status_dict[key]["page_step"] = int(data[3])
-    elif data[2] == "st":
+    elif action == "st":
         async with task_dict_lock:
             if key in status_dict:
                 status_dict[key]["status"] = data[3]
         await update_status_message(key, force=True)
-    elif data[2] == "ov":
+    elif action == "ov":
         message = query.message
-        tasks = {
-            "Download": 0,
-            "Upload": 0,
-            "Seed": 0,
-            "Archive": 0,
-            "Extract": 0,
-            "Split": 0,
-            "QueueDl": 0,
-            "QueueUp": 0,
-            "Clone": 0,
-            "CheckUp": 0,
-            "Pause": 0,
-            "SamVid": 0,
-            "ConvertMedia": 0,
-            "FFmpeg": 0,
-        }
-        dl_speed = 0
-        up_speed = 0
-        seed_speed = 0
+        task_types = [
+            "Download", "Upload", "Seed", "Archive", "Extract", "Split",
+            "QueueDl", "QueueUp", "Clone", "CheckUp", "Pause", "SamVid",
+            "ConvertMedia", "FFmpeg"
+        ]
+        tasks = {t: 0 for t in task_types}
+        dl_speed = up_speed = seed_speed = 0
 
         async with task_dict_lock:
             status_results = await gather(
@@ -237,30 +223,26 @@ async def status_pages(_, query):
             )
 
         eng_status = EngineStatus()
-        if any(
-            eng in (eng_status.STATUS_ARIA2, eng_status.STATUS_QBIT)
-            for _, __, eng in status_results
-        ):
-            dl_speed, seed_speed = await TorrentManager.overall_speed()
+        if any(eng in (eng_status.STATUS_ARIA2, eng_status.STATUS_QBIT) for _, __, eng in status_results):
+            dl, seed = await TorrentManager.overall_speed()
+            dl_speed += dl
+            seed_speed += seed
 
         if any(eng == eng_status.STATUS_SABNZBD for _, __, eng in status_results):
             if sabnzbd_client.LOGGED_IN:
-                dl_speed += (
-                    int(
-                        float(
-                            (await sabnzbd_client.get_downloads())["queue"].get(
-                                "kbpersec", "0"
-                            )
-                        )
-                    )
-                    * 1024
-                )
+                try:
+                    kbps = float((await sabnzbd_client.get_downloads())["queue"].get("kbpersec", "0"))
+                except Exception:
+                    kbps = 0
+                dl_speed += int(kbps * 1024)
 
         if any(eng == eng_status.STATUS_JD for _, __, eng in status_results):
             if jdownloader.is_connected:
-                dl_speed += (
-                    await jdownloader.device.downloadcontroller.get_speed_in_bytes()
-                )
+                try:
+                    jd_speed = await jdownloader.device.downloadcontroller.get_speed_in_bytes()
+                except Exception:
+                    jd_speed = 0
+                dl_speed += jd_speed
 
         for status, speed, _ in status_results:
             match status:
@@ -298,20 +280,19 @@ async def status_pages(_, query):
                 case _:
                     tasks["Download"] += 1
 
-        msg = f"""㊂ <b>Tasks Overview</b> :
-        
-╭ <b>Download:</b> {tasks["Download"]} | <b>Upload:</b> {tasks["Upload"]}
-├ <b>Seed:</b> {tasks["Seed"]} | <b>Archive:</b> {tasks["Archive"]}
-├ <b>Extract:</b> {tasks["Extract"]} | <b>Split:</b> {tasks["Split"]}
-├ <b>QueueDL:</b> {tasks["QueueDl"]} | <b>QueueUP:</b> {tasks["QueueUp"]}
-├ <b>Clone:</b> {tasks["Clone"]} | <b>CheckUp:</b> {tasks["CheckUp"]}
-├ <b>Paused:</b> {tasks["Pause"]} | <b>SamVideo:</b> {tasks["SamVid"]}
-╰ <b>Convert:</b> {tasks["ConvertMedia"]} | <b>FFmpeg:</b> {tasks["FFmpeg"]}
-
-╭ <b>Total Download Speed:</b> {get_readable_file_size(dl_speed)}/s
-├ <b>Total Upload Speed:</b> {get_readable_file_size(up_speed)}/s
-╰ <b>Total Seeding Speed:</b> {get_readable_file_size(seed_speed)}/s
-"""
+        msg = (
+            "㊂ <b>Tasks Overview</b> :\n\n"
+            f"╭ <b>Download:</b> {tasks['Download']} | <b>Upload:</b> {tasks['Upload']}\n"
+            f"├ <b>Seed:</b> {tasks['Seed']} | <b>Archive:</b> {tasks['Archive']}\n"
+            f"├ <b>Extract:</b> {tasks['Extract']} | <b>Split:</b> {tasks['Split']}\n"
+            f"├ <b>QueueDL:</b> {tasks['QueueDl']} | <b>QueueUP:</b> {tasks['QueueUp']}\n"
+            f"├ <b>Clone:</b> {tasks['Clone']} | <b>CheckUp:</b> {tasks['CheckUp']}\n"
+            f"├ <b>Paused:</b> {tasks['Pause']} | <b>SamVideo:</b> {tasks['SamVid']}\n"
+            f"╰ <b>Convert:</b> {tasks['ConvertMedia']} | <b>FFmpeg:</b> {tasks['FFmpeg']}\n\n"
+            f"╭ <b>Total Download Speed:</b> {get_readable_file_size(dl_speed)}/s\n"
+            f"├ <b>Total Upload Speed:</b> {get_readable_file_size(up_speed)}/s\n"
+            f"╰ <b>Total Seeding Speed:</b> {get_readable_file_size(seed_speed)}/s"
+        )
         button = ButtonMaker()
         button.data_button("Back", f"status {data[1]} ref")
         await edit_message(message, msg, button.build_menu())

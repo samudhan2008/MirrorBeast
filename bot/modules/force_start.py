@@ -13,71 +13,90 @@ from ..helper.telegram_helper.bot_commands import BotCommands
 from ..helper.telegram_helper.message_utils import send_message
 from ..helper.ext_utils.task_manager import start_dl_from_queued, start_up_from_queued
 
-
 @new_task
 async def remove_from_queue(_, message):
-    user_id = (message.from_user or message.sender_chat).id
-    msg = message.text.split()
-    status = msg[1] if len(msg) > 1 and msg[1] in ["fd", "fu"] else ""
-    if status and len(msg) > 2 or not status and len(msg) > 1:
-        gid = msg[2] if status else msg[1]
+    """
+    Force starts a queued download/upload task by GID or by reply.
+    Allows download (fd), upload (fu), or both to be forced.
+    Only allowed for the task owner, bot owner, or sudo users.
+    """
+    user = getattr(message, "from_user", None) or getattr(message, "sender_chat", None)
+    user_id = getattr(user, "id", None)
+    msg_args = message.text.split()
+    status = msg_args[1] if len(msg_args) > 1 and msg_args[1] in {"fd", "fu"} else ""
+    gid = None
+    task = None
+
+    if (status and len(msg_args) > 2) or (not status and len(msg_args) > 1):
+        gid = msg_args[2] if status else msg_args[1]
         task = await get_task_by_gid(gid)
         if task is None:
             await send_message(message, f"GID: <code>{gid}</code> Not Found.")
             return
-    elif reply_to_id := message.reply_to_message_id:
+    elif getattr(message, "reply_to_message_id", None):
+        reply_to_id = message.reply_to_message_id
         async with task_dict_lock:
             task = task_dict.get(reply_to_id)
         if task is None:
             await send_message(message, "This is not an active task!")
             return
-    elif len(msg) in {1, 2}:
-        msg = f"""Reply to an active Command message which was used to start the download/upload.
-<code>/{BotCommands.ForceStartCommand[0]}</code> fd (to remove it from download queue) or fu (to remove it from upload queue) or nothing to start remove it from both download and upload queue.
-Also send <code>/{BotCommands.ForceStartCommand[0]} GID</code> fu|fd or obly gid to force start by removeing the task rom queue!
+    else:
+        # Help message
+        help_msg = f"""Reply to an active command message used to start the task.
+<code>/{BotCommands.ForceStartCommand[0]}</code> fd (force download only) or fu (force upload only) or nothing (force both).
+Or send <code>/{BotCommands.ForceStartCommand[0]} GID</code> [fu|fd] to force start by GID.
 Examples:
 <code>/{BotCommands.ForceStartCommand[1]}</code> GID fu (force upload)
 <code>/{BotCommands.ForceStartCommand[1]}</code> GID (force download and upload)
-By reply to task cmd:
-<code>/{BotCommands.ForceStartCommand[1]}</code> (force download and upload)
-<code>/{BotCommands.ForceStartCommand[1]}</code> fd (force download)
+By replying to task cmd:
+<code>/{BotCommands.ForceStartCommand[1]}</code>
+<code>/{BotCommands.ForceStartCommand[1]}</code> fd
 """
-        await send_message(message, msg)
+        await send_message(message, help_msg)
         return
-    if (
-        Config.OWNER_ID != user_id
-        and task.listener.user_id != user_id
-        and (user_id not in user_data or not user_data[user_id].get("SUDO"))
-    ):
-        await send_message(message, "This task is not for you!")
+
+    # Permission check
+    listener = getattr(task, "listener", None)
+    if not listener or not hasattr(listener, "user_id"):
+        await send_message(message, "No valid task listener found.")
         return
-    listener = task.listener
+
+    is_owner = Config.OWNER_ID == user_id
+    is_task_owner = listener.user_id == user_id
+    is_sudo = user_id in user_data and user_data[user_id].get("SUDO")
+    if not (is_owner or is_task_owner or is_sudo):
+        await send_message(message, "You are not authorized to force start this task!")
+        return
+
+    # Handle force start logic
     msg = ""
     async with queue_dict_lock:
+        mid = getattr(listener, "mid", None)
         if status == "fu":
             listener.force_upload = True
-            if listener.mid in queued_up:
-                await start_up_from_queued(listener.mid)
-                msg = "Task have been force started to upload!"
+            if mid in queued_up:
+                await start_up_from_queued(mid)
+                msg = "Task has been force started to upload!"
             else:
                 msg = "Force upload enabled for this task!"
         elif status == "fd":
             listener.force_download = True
-            if listener.mid in queued_dl:
-                await start_dl_from_queued(listener.mid)
-                msg = "Task have been force started to download only!"
+            if mid in queued_dl:
+                await start_dl_from_queued(mid)
+                msg = "Task has been force started to download only!"
             else:
-                msg = "This task not in download queue!"
+                msg = "This task is not in the download queue!"
         else:
             listener.force_download = True
             listener.force_upload = True
-            if listener.mid in queued_up:
-                await start_up_from_queued(listener.mid)
-                msg = "Task have been force started to upload!"
-            elif listener.mid in queued_dl:
-                await start_dl_from_queued(listener.mid)
-                msg = "Task have been force started to download and upload will start once download finish!"
+            if mid in queued_up:
+                await start_up_from_queued(mid)
+                msg = "Task has been force started to upload!"
+            elif mid in queued_dl:
+                await start_dl_from_queued(mid)
+                msg = "Task has been force started to download and upload will start once download finishes!"
             else:
-                msg = "This task not in queue!"
+                msg = "This task is not in any queue!"
+
     if msg:
         await send_message(message, msg)

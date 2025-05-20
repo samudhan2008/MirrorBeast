@@ -28,65 +28,77 @@ from ..helper.telegram_helper.message_utils import (
 
 @new_task
 async def start(_, message):
+    """
+    Handler for /start command. Provides bot info, handles login tokens, and PM onboarding.
+    """
     userid = message.from_user.id
     lang = Language()
     buttons = ButtonMaker()
-    buttons.url_button(
-        lang.START_BUTTON1, "https://github.com/MirrorBeast/MirrorBeast"
-    )
+    buttons.url_button(lang.START_BUTTON1, "https://github.com/BeastBots/MirrorBeast")
     buttons.url_button(lang.START_BUTTON2, "https://t.me/MirrorBeast")
     reply_markup = buttons.build_menu(2)
 
     if len(message.command) > 1 and message.command[1] == "beast":
         await delete_message(message)
+        return
     elif len(message.command) > 1 and message.command[1] != "start":
         decrypted_url = decode_slink(message.command[1])
         if Config.MEDIA_STORE and decrypted_url.startswith("file"):
             decrypted_url = decrypted_url.replace("file", "")
             chat_id, msg_id = decrypted_url.split("&&")
             LOGGER.info(f"Copying message from {chat_id} & {msg_id} to {userid}")
-            return await TgClient.bot.copy_message(  # TODO: make it function
+            return await TgClient.bot.copy_message(
                 chat_id=userid,
                 from_chat_id=int(chat_id) if match(r"\d+", chat_id) else chat_id,
                 message_id=int(msg_id),
                 disable_notification=True,
             )
         elif Config.VERIFY_TIMEOUT:
+            if "&&" not in decrypted_url:
+                await send_message(
+                    message,
+                    "<b>Malformed token link.</b>\n\n<i>Please request a fresh token.</i>",
+                )
+                return
             input_token, pre_uid = decrypted_url.split("&&")
             if int(pre_uid) != userid:
-                return await send_message(
+                await send_message(
                     message,
                     "<b>Access Token is not yours!</b>\n\n<i>Kindly generate your own to use.</i>",
                 )
+                return
             data = user_data.get(userid, {})
             if "VERIFY_TOKEN" not in data or data["VERIFY_TOKEN"] != input_token:
-                return await send_message(
+                await send_message(
                     message,
                     "<b>Access Token already used!</b>\n\n<i>Kindly generate a new one.</i>",
                 )
+                return
             elif (
                 Config.LOGIN_PASS
                 and data["VERIFY_TOKEN"].casefold() == Config.LOGIN_PASS.casefold()
             ):
-                return await send_message(
+                await send_message(
                     message,
                     "<b>Bot Already Logged In via Password</b>\n\n<i>No Need to Accept Temp Tokens.</i>",
                 )
+                return
             buttons.data_button(
                 "Activate Access Token", f"start pass {input_token}", "header"
             )
             reply_markup = buttons.build_menu(2)
-            msg = f"""⌬ Access Login Token : 
-    ╭ <b>Status</b> → <code>Generated Successfully</code>
-    ├ <b>Access Token</b> → <code>{input_token}</code>
-    |
-    ╰ <b>Validity:</b> {get_readable_time(int(Config.VERIFY_TIMEOUT))}"""
-            return await send_message(message, msg, reply_markup)
+            msg = (
+                "⌬ Access Login Token :\n"
+                "╭ <b>Status</b> → <code>Generated Successfully</code>\n"
+                f"├ <b>Access Token</b> → <code>{input_token}</code>\n"
+                "|\n"
+                f"╰ <b>Validity:</b> {get_readable_time(int(Config.VERIFY_TIMEOUT))}"
+            )
+            await send_message(message, msg, reply_markup)
+            return
 
     if await CustomFilters.authorized(_, message):
-        start_string = lang.START_MSG.format(
-            cmd=BotCommands.HelpCommand[0],
-        )
+        start_string = lang.START_MSG.format(cmd=BotCommands.HelpCommand[0])
         await send_message(message, start_string, reply_markup)
     elif Config.BOT_PM:
         await send_message(
@@ -105,71 +117,92 @@ async def start(_, message):
 
 @new_task
 async def start_cb(_, query):
+    """
+    Callback for access token activation button in /start token flow.
+    """
     user_id = query.from_user.id
     input_token = query.data.split()[2]
     data = user_data.get(user_id, {})
 
     if input_token == "activated":
-        return await query.answer("Already Activated!", show_alert=True)
+        await query.answer("Already Activated!", show_alert=True)
+        return
     elif "VERIFY_TOKEN" not in data or data["VERIFY_TOKEN"] != input_token:
-        return await query.answer("Already Used, Generate New One", show_alert=True)
+        await query.answer("Already Used, Generate New One", show_alert=True)
+        return
 
+    # Invalidate current token, set verification time
     update_user_ldata(user_id, "VERIFY_TOKEN", str(uuid4()))
     update_user_ldata(user_id, "VERIFY_TIME", time())
     if Config.DATABASE_URL:
         await database.update_user_data(user_id)
     await query.answer("Activated Access Login Token!", show_alert=True)
 
+    # Update markup to reflect activation
     kb = query.message.reply_markup.inline_keyboard[1:]
     kb.insert(
         0,
-        [InlineKeyboardButton("✅️ Activated ✅", callback_data="start pass activated")],
+        [InlineKeyboardButton("✅️ Activated", callback_data="start pass activated")],
     )
     await edit_reply_markup(query.message, InlineKeyboardMarkup(kb))
 
 
 @new_task
 async def login(_, message):
+    """
+    Handler for /login command to allow users to permanently log in with a password.
+    """
     if Config.LOGIN_PASS is None:
-        return await send_message(message, "<i>Login is not enabled !</i>")
-    elif len(message.command) > 1:
+        await send_message(message, "<i>Login is not enabled !</i>")
+        return
+
+    if len(message.command) > 1:
         user_id = message.from_user.id
         input_pass = message.command[1]
 
         if user_data.get(user_id, {}).get("VERIFY_TOKEN", "") == Config.LOGIN_PASS:
-            return await send_message(
+            await send_message(
                 message, "<b>Already Bot Login In!</b>\n\n<i>No Need to Login Again</i>"
             )
+            return
 
         if input_pass.casefold() != Config.LOGIN_PASS.casefold():
-            return await send_message(
+            await send_message(
                 message, "<b>Wrong Password!</b>\n\n<i>Kindly check and try again</i>"
             )
+            return
 
         update_user_ldata(user_id, "VERIFY_TOKEN", Config.LOGIN_PASS)
         if Config.DATABASE_URL:
             await database.update_user_data(user_id)
-        return await send_message(
+        await send_message(
             message, "<b>Bot Permanent Logged In!</b>\n\n<i>Now you can use the bot</i>"
         )
-    else:
-        await send_message(
-            message, "<b>Bot Login Usage :</b>\n\n<code>/login [password]</code>"
-        )
+        return
+    await send_message(
+        message, "<b>Bot Login Usage :</b>\n\n<code>/login [password]</code>"
+    )
 
 
 @new_task
 async def ping(_, message):
+    """
+    Handler for /ping command, returns bot's latency.
+    """
     start_time = monotonic()
     reply = await send_message(message, "<i>Starting Ping..</i>")
     end_time = monotonic()
     await edit_message(
-        reply, f"<i>Get a life!, ping is 👇</i>\n <code>{int((end_time - start_time) * 1000)} ms</code>"
+        reply,
+        f"<i>Get a life!, ping is 👇</i>\n <code>{int((end_time - start_time) * 1000)} ms</code>",
     )
 
 
 @new_task
 async def log(_, message):
+    """
+    Handler for /log command, sends log.txt as file and with control buttons.
+    """
     uid = message.from_user.id
     buttons = ButtonMaker()
     buttons.data_button("Log Disp", f"log {uid} disp")
@@ -180,24 +213,33 @@ async def log(_, message):
 
 @new_task
 async def log_cb(_, query):
+    """
+    Callback query handler for log command controls.
+    Supports display, web paste, and close actions.
+    """
     data = query.data.split()
     message = query.message
     user_id = query.from_user.id
     if user_id != int(data[1]):
         await query.answer("Not Yours!", show_alert=True)
-    elif data[2] == "close":
+        return
+    action = data[2]
+
+    if action == "close":
         await query.answer()
-        await delete_message(message, message.reply_to_message)
-    elif data[2] == "disp":
+        await delete_message(message, getattr(message, "reply_to_message", message))
+        return
+
+    elif action == "disp":
         await query.answer("Fetching Log..")
-        async with aiopen("log.txt", "r") as f:
-            content = await f.read()
-
-        def parse(line):
-            parts = line.split("] [", 1)
-            return f"[{parts[1]}" if len(parts) > 1 else line
-
         try:
+            async with aiopen("log.txt", "r") as f:
+                content = await f.read()
+
+            def parse(line):
+                parts = line.split("] [", 1)
+                return f"[{parts[1]}" if len(parts) > 1 else line
+
             res, total = [], 0
             for line in reversed(content.splitlines()):
                 line = parse(line)
@@ -206,15 +248,23 @@ async def log_cb(_, query):
                 if total > 3500:
                     break
 
-            text = f"<b>Showing Last {len(res)} Lines from log.txt:</b> \n\n----------<b>START LOG</b>----------\n\n<blockquote expandable>{escape('\n'.join(reversed(res)))}</blockquote>\n----------<b>END LOG</b>----------"
-
+            text = (
+                f"<b>Showing Last {len(res)} Lines from log.txt:</b> \n\n"
+                "----------<b>START LOG</b>----------\n\n"
+                f"<blockquote expandable>{escape(chr(10).join(reversed(res)))}</blockquote>\n"
+                "----------<b>END LOG</b>----------"
+            )
             btn = ButtonMaker()
             btn.data_button("Close", f"log {user_id} close")
             await send_message(message, text, btn.build_menu(1))
             await edit_reply_markup(message, None)
         except Exception as err:
             LOGGER.error(f"TG Log Display : {str(err)}")
-    elif data[2] == "web":
+            await query.answer("Log read error!", show_alert=True)
+        return
+
+    elif action == "web":
+        await query.answer("Uploading to pastebin...")
         boundary = "R1eFDeaC554BUkLF"
         headers = {
             "Content-Type": f"multipart/form-data; boundary=----WebKitFormBoundary{boundary}",
@@ -230,23 +280,25 @@ async def log_cb(_, query):
             "Upgrade-Insecure-Requests": "1",
             "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
         }
+        try:
+            async with aiopen("log.txt", "r") as f:
+                content = await f.read()
 
-        async with aiopen("log.txt", "r") as f:
-            content = await f.read()
+            data = (
+                f"------WebKitFormBoundary{boundary}\r\n"
+                f'Content-Disposition: form-data; name="content"\r\n\r\n'
+                f"{content}\r\n"
+                f"------WebKitFormBoundary{boundary}--\r\n"
+            )
 
-        data = (
-            f"------WebKitFormBoundary{boundary}\r\n"
-            f'Content-Disposition: form-data; name="content"\r\n\r\n'
-            f"{content}\r\n"
-            f"------WebKitFormBoundary{boundary}--\r\n"
-        )
-
-        cget = create_scraper().request
-        resp = cget("POST", "https://spaceb.in/", headers=headers, data=data)
-        if resp.status_code == 200:
-            await query.answer("Generating..")
-            btn = ButtonMaker()
-            btn.url_button("📨 Web Paste (SB)", resp.url)
-            await edit_reply_markup(message, btn.build_menu(1))
-        else:
+            cget = create_scraper().request
+            resp = cget("POST", "https://spaceb.in/", headers=headers, data=data)
+            if resp.status_code == 200:
+                btn = ButtonMaker()
+                btn.url_button("📨 Web Paste (SB)", resp.url)
+                await edit_reply_markup(message, btn.build_menu(1))
+            else:
+                await query.answer("Web Paste Failed ! Check Logs", show_alert=True)
+        except Exception as err:
+            LOGGER.error(f"Web log paste error: {str(err)}")
             await query.answer("Web Paste Failed ! Check Logs", show_alert=True)
