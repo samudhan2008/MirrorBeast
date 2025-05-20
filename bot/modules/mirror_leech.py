@@ -57,9 +57,9 @@ class Mirror(TaskListener):
     ):
         same_dir = same_dir or {}
         bulk = bulk or []
+        self.message = message
         super().__init__()
         self.client = client
-        self.message = message
         self.multi_tag = multi_tag
         self.options = options
         self.same_dir = same_dir
