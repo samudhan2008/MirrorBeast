@@ -18,6 +18,7 @@ from ..helper.telegram_helper.message_utils import (
     edit_message,
 )
 
+
 @new_task
 async def cancel(_, message):
     """
@@ -67,6 +68,7 @@ async def cancel(_, message):
     obj = task.task()
     await obj.cancel_task()
 
+
 @new_task
 async def cancel_multi(_, query):
     """
@@ -86,7 +88,10 @@ async def cancel_multi(_, query):
     else:
         msg = "Already Stopped/Finished!"
     await query.answer(msg, show_alert=True)
-    await delete_message(query.message, getattr(query.message, "reply_to_message", None))
+    await delete_message(
+        query.message, getattr(query.message, "reply_to_message", None)
+    )
+
 
 async def cancel_all(status, user_id):
     """
@@ -100,6 +105,7 @@ async def cancel_all(status, user_id):
         await obj.cancel_task()
         await sleep(2)
     return True
+
 
 def create_cancel_buttons(is_sudo, user_id=""):
     """
@@ -133,6 +139,7 @@ def create_cancel_buttons(is_sudo, user_id=""):
     buttons.data_button("Close", f"canall close ms {user_id}")
     return buttons.build_menu(2)
 
+
 @new_task
 async def cancel_all_buttons(_, message):
     """
@@ -147,6 +154,7 @@ async def cancel_all_buttons(_, message):
     button = create_cancel_buttons(is_sudo, message.from_user.id)
     can_msg = await send_message(message, "Choose tasks to cancel!", button)
     await auto_delete_message(message, can_msg)
+
 
 @new_task
 async def cancel_all_update(_, query):

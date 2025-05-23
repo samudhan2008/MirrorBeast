@@ -43,7 +43,9 @@ async def hydra_search(_, message):
         )
     except Exception as e:
         LOGGER.exception(f"Error in hydra_search: {e!s}")
-        await edit_message(progress_msg, "❌ Something went wrong. Please try again later.")
+        await edit_message(
+            progress_msg, "❌ Something went wrong. Please try again later."
+        )
 
 
 async def search_nzbhydra(query, limit=50):
@@ -82,7 +84,9 @@ async def search_nzbhydra(query, limit=50):
                     try:
                         root = ET.fromstring(content)
                         items = root.findall(".//item")
-                        LOGGER.info(f"NZBHydra returned {len(items)} results for '{query}'")
+                        LOGGER.info(
+                            f"NZBHydra returned {len(items)} results for '{query}'"
+                        )
                         return items
                     except ET.ParseError as parse_err:
                         LOGGER.error(f"Failed to parse NZBHydra XML: {parse_err!s}")
@@ -101,10 +105,7 @@ async def create_telegraph_page(query, items):
     Returns the Telegraph page URL.
     """
     sorted_items = sorted(
-        (
-            int(item.findtext("size", default="0")), item
-        )
-        for item in items[:100]
+        (int(item.findtext("size", default="0")), item) for item in items[:100]
     )
     sorted_items.sort(reverse=True, key=lambda x: x[0])
 

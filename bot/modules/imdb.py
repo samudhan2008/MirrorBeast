@@ -49,17 +49,21 @@ IMDB_GENRE_EMOJI = {
 }
 LIST_ITEMS = 4
 
+
 def safe_int(val, default=None):
     try:
         return int(val)
     except Exception:
         return default
 
+
 def safe_str(val, default=""):
     return str(val) if val else default
 
+
 def safe_list(val):
     return val if isinstance(val, list) else ([val] if val else [])
+
 
 def list_to_str(k):
     if not k:
@@ -71,6 +75,7 @@ def list_to_str(k):
         k = k[:LIST_ITEMS]
         return " ".join(f"{elem}," for elem in k)[:-1] + " ..."
     return " ".join(f"{elem}," for elem in k)[:-1]
+
 
 def list_to_hash(k, flagg=False, emoji=False):
     k = safe_list(k)
@@ -102,6 +107,7 @@ def list_to_hash(k, flagg=False, emoji=False):
         listing += f"#{ele}, "
     return listing[:-2]
 
+
 def get_movie_year(query, file=None):
     query = (query.strip()).lower()
     year = findall(r"[1-2]\d{3}$", query, IGNORECASE)
@@ -113,6 +119,7 @@ def get_movie_year(query, file=None):
             return list_to_str(year[:1]), query
     return None, query
 
+
 def get_poster(query, bulk=False, id=False, file=None):
     if not id:
         year, title = get_movie_year(query, file)
@@ -120,9 +127,13 @@ def get_poster(query, bulk=False, id=False, file=None):
         if not movieid:
             return None
         filtered = (
-            list(filter(lambda k: str(k.get("year")) == str(year), movieid))
-            or movieid
-        ) if year else movieid
+            (
+                list(filter(lambda k: str(k.get("year")) == str(year), movieid))
+                or movieid
+            )
+            if year
+            else movieid
+        )
         filtered = (
             list(filter(lambda k: k.get("kind") in ["movie", "tv series"], filtered))
             or filtered
@@ -174,6 +185,7 @@ def get_poster(query, bulk=False, id=False, file=None):
         "url_releaseinfo": f"https://www.imdb.com/title/tt{movieid}/releaseinfo",
     }
 
+
 async def imdb_search(_, message):
     if " " in message.text:
         k = await send_message(message, "<i>Searching IMDb ...</i>")
@@ -211,6 +223,7 @@ async def imdb_search(_, message):
             message,
             "<i>Send Movie / TV Series Name along with /imdb Command or send IMDb URL</i>",
         )
+
 
 async def imdb_callback(_, query):
     message = query.message

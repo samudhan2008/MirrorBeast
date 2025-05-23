@@ -1,11 +1,9 @@
-
 from io import BytesIO
 import shlex
 import traceback
 from .. import LOGGER
 from ..helper.ext_utils.bot_utils import cmd_exec, new_task
 from ..helper.telegram_helper.message_utils import send_message, send_file
-
 
 
 @new_task
@@ -27,7 +25,9 @@ async def run_shell(_, message):
         # args = shlex.split(cmd)
 
         # Notify user command is running
-        running_msg = await send_message(message, f"<i>Running shell command:</i> <code>{cmd}</code>")
+        running_msg = await send_message(
+            message, f"<i>Running shell command:</i> <code>{cmd}</code>"
+        )
 
         # Run the command
         stdout, stderr, _ = await cmd_exec(cmd, shell=True)
@@ -36,6 +36,7 @@ async def run_shell(_, message):
         def redact(text):
             # Add more patterns as needed
             import re
+
             patterns = [r"(token|password|secret)[=:]\s*\S+", r"ghp_\w+"]
             for pat in patterns:
                 text = re.sub(pat, r"\1=[REDACTED]", text, flags=re.IGNORECASE)
@@ -56,12 +57,16 @@ async def run_shell(_, message):
         if len(reply) > 3000:
             with BytesIO(reply.encode()) as out_file:
                 out_file.name = "shell_output.txt"
-                await send_file(message, out_file, caption=f"<b>Output for:</b> <code>{cmd}</code>")
+                await send_file(
+                    message, out_file, caption=f"<b>Output for:</b> <code>{cmd}</code>"
+                )
                 await delete_message(running_msg)
         elif reply:
             await edit_message(running_msg, reply)
         else:
-            await edit_message(running_msg, "<b>No output was returned by the command.</b>")
+            await edit_message(
+                running_msg, "<b>No output was returned by the command.</b>"
+            )
     except Exception as e:
         tb = traceback.format_exc()
         LOGGER.error(f"Shell command error: {e}\n{tb}")

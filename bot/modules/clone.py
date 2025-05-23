@@ -123,7 +123,9 @@ class Clone(TaskListener):
         await self.run_multi(input_list, Clone)
 
         if not self.link:
-            await send_message(self.message, COMMAND_USAGE["clone"][0], COMMAND_USAGE["clone"][1])
+            await send_message(
+                self.message, COMMAND_USAGE["clone"][0], COMMAND_USAGE["clone"][1]
+            )
             await delete_links(self.message)
             return
 
@@ -189,9 +191,7 @@ class Clone(TaskListener):
         # For small file counts, show simple cloning message
         msg = None
         if files <= 10:
-            msg = await send_message(
-                self.message, f"Cloning: <code>{self.link}</code>"
-            )
+            msg = await send_message(self.message, f"Cloning: <code>{self.link}</code>")
         else:
             gid = token_hex(5)
             async with task_dict_lock:
@@ -248,7 +248,9 @@ class Clone(TaskListener):
             if rstat.get("IsDir"):
                 if not self.name:
                     self.name = src_path.rsplit("/", 1)[-1] if src_path else remote
-                self.up_dest += (self.name if self.up_dest.endswith(":") else f"/{self.name}")
+                self.up_dest += (
+                    self.name if self.up_dest.endswith(":") else f"/{self.name}"
+                )
                 mime_type = "Folder"
             else:
                 if not self.name:
@@ -334,9 +336,7 @@ class Clone(TaskListener):
             folders = len(res2[0].strip().split("\n")) if res2[0] else 0
             rsize = loads(res3[0])
             self.size = rsize.get("bytes", 0)
-            await self.on_upload_complete(
-                flink, files, folders, mime_type, destination
-            )
+            await self.on_upload_complete(flink, files, folders, mime_type, destination)
 
 
 async def clone_node(client, message):

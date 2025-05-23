@@ -24,15 +24,23 @@ from ..helper.ext_utils.links_utils import (
 from ..helper.ext_utils.task_manager import pre_task_check
 from ..helper.listeners.task_listener import TaskListener
 from ..helper.mirror_leech_utils.download_utils.aria2_download import add_aria2_download
-from ..helper.mirror_leech_utils.download_utils.direct_downloader import add_direct_download
-from ..helper.mirror_leech_utils.download_utils.direct_link_generator import direct_link_generator
+from ..helper.mirror_leech_utils.download_utils.direct_downloader import (
+    add_direct_download,
+)
+from ..helper.mirror_leech_utils.download_utils.direct_link_generator import (
+    direct_link_generator,
+)
 from ..helper.mirror_leech_utils.download_utils.gd_download import add_gd_download
 from ..helper.mirror_leech_utils.download_utils.jd_download import add_jd_download
 from ..helper.mirror_leech_utils.download_utils.mega_download import add_mega_download
 from ..helper.mirror_leech_utils.download_utils.nzb_downloader import add_nzb
 from ..helper.mirror_leech_utils.download_utils.qbit_download import add_qb_torrent
-from ..helper.mirror_leech_utils.download_utils.rclone_download import add_rclone_download
-from ..helper.mirror_leech_utils.download_utils.telegram_download import TelegramDownloadHelper
+from ..helper.mirror_leech_utils.download_utils.rclone_download import (
+    add_rclone_download,
+)
+from ..helper.mirror_leech_utils.download_utils.telegram_download import (
+    TelegramDownloadHelper,
+)
 from ..helper.telegram_helper.message_utils import (
     auto_delete_message,
     delete_links,
@@ -82,12 +90,38 @@ class Mirror(TaskListener):
             return
 
         args = {
-            "-doc": False, "-med": False, "-d": False, "-j": False, "-s": False,
-            "-b": False, "-e": False, "-z": False, "-sv": False, "-ss": False,
-            "-f": False, "-fd": False, "-fu": False, "-hl": False, "-bt": False,
-            "-ut": False, "-i": 0, "-sp": 0, "link": "", "-n": "", "-m": "",
-            "-up": "", "-rcf": "", "-au": "", "-ap": "", "-h": "", "-t": "",
-            "-ca": "", "-cv": "", "-ns": "", "-tl": "", "-ff": set(),
+            "-doc": False,
+            "-med": False,
+            "-d": False,
+            "-j": False,
+            "-s": False,
+            "-b": False,
+            "-e": False,
+            "-z": False,
+            "-sv": False,
+            "-ss": False,
+            "-f": False,
+            "-fd": False,
+            "-fu": False,
+            "-hl": False,
+            "-bt": False,
+            "-ut": False,
+            "-i": 0,
+            "-sp": 0,
+            "link": "",
+            "-n": "",
+            "-m": "",
+            "-up": "",
+            "-rcf": "",
+            "-au": "",
+            "-ap": "",
+            "-h": "",
+            "-t": "",
+            "-ca": "",
+            "-cv": "",
+            "-ns": "",
+            "-tl": "",
+            "-ff": set(),
         }
         arg_parser(input_list[1:], args)
 
@@ -155,7 +189,11 @@ class Mirror(TaskListener):
 
         try:
             if args["-ff"]:
-                self.ffmpeg_cmds = set(args["-ff"]) if isinstance(args["-ff"], set) else set(eval(args["-ff"]))
+                self.ffmpeg_cmds = (
+                    set(args["-ff"])
+                    if isinstance(args["-ff"], set)
+                    else set(eval(args["-ff"]))
+                )
             else:
                 self.ffmpeg_cmds = None
         except Exception as e:
@@ -267,7 +305,7 @@ class Mirror(TaskListener):
                 or reply_to.animation
                 or None
             )
-            self.file_details = {"caption": getattr(reply_to, 'caption', None)}
+            self.file_details = {"caption": getattr(reply_to, "caption", None)}
             if file_ is None:
                 if getattr(reply_to, "text", None):
                     self.link = reply_to.text.split("\n", 1)[0].strip()
@@ -354,7 +392,9 @@ class Mirror(TaskListener):
         await delete_links(self.message)
 
         if file_ is not None:
-            await TelegramDownloadHelper(self).add_download(reply_to, f"{path}/", session)
+            await TelegramDownloadHelper(self).add_download(
+                reply_to, f"{path}/", session
+            )
         elif isinstance(self.link, dict):
             await add_direct_download(self, path)
         elif self.is_jd:
@@ -379,17 +419,22 @@ class Mirror(TaskListener):
                 )
             await add_aria2_download(self, path, headers, ratio, seed_time)
 
+
 async def mirror(client, message):
     bot_loop.create_task(Mirror(client, message).new_event())
+
 
 async def qb_mirror(client, message):
     bot_loop.create_task(Mirror(client, message, is_qbit=True).new_event())
 
+
 async def jd_mirror(client, message):
     bot_loop.create_task(Mirror(client, message, is_jd=True).new_event())
 
+
 async def nzb_mirror(client, message):
     bot_loop.create_task(Mirror(client, message, is_nzb=True).new_event())
+
 
 async def leech(client, message):
     if Config.DISABLE_LEECH:
@@ -397,11 +442,18 @@ async def leech(client, message):
         return
     bot_loop.create_task(Mirror(client, message, is_leech=True).new_event())
 
+
 async def qb_leech(client, message):
-    bot_loop.create_task(Mirror(client, message, is_qbit=True, is_leech=True).new_event())
+    bot_loop.create_task(
+        Mirror(client, message, is_qbit=True, is_leech=True).new_event()
+    )
+
 
 async def jd_leech(client, message):
     bot_loop.create_task(Mirror(client, message, is_leech=True, is_jd=True).new_event())
 
+
 async def nzb_leech(client, message):
-    bot_loop.create_task(Mirror(client, message, is_leech=True, is_nzb=True).new_event())
+    bot_loop.create_task(
+        Mirror(client, message, is_leech=True, is_nzb=True).new_event()
+    )

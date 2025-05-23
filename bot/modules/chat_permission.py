@@ -3,6 +3,7 @@ from ..helper.ext_utils.bot_utils import update_user_ldata, new_task
 from ..helper.ext_utils.db_handler import database
 from ..helper.telegram_helper.message_utils import send_message
 
+
 def extract_id_and_thread(msg, message):
     """
     Utility to extract chat/user ID and thread ID from message or reply.
@@ -18,15 +19,20 @@ def extract_id_and_thread(msg, message):
         else:
             chat_id = int(msg[1].strip())
     elif getattr(message, "reply_to_message", None) and (
-        not hasattr(message, "message_thread_id") or message.reply_to_message.id != getattr(message, "message_thread_id", None)
+        not hasattr(message, "message_thread_id")
+        or message.reply_to_message.id != getattr(message, "message_thread_id", None)
     ):
         reply_to = message.reply_to_message
-        chat_id = (getattr(reply_to, "from_user", None) or getattr(reply_to, "sender_chat", None)).id
+        chat_id = (
+            getattr(reply_to, "from_user", None)
+            or getattr(reply_to, "sender_chat", None)
+        ).id
     else:
         if getattr(message, "is_topic_message", False):
             thread_id = getattr(message, "message_thread_id", None)
         chat_id = message.chat.id
     return chat_id, thread_id
+
 
 @new_task
 async def authorize(_, message):
@@ -55,6 +61,7 @@ async def authorize(_, message):
         msg_text = "Done 👍"
     await send_message(message, msg_text)
 
+
 @new_task
 async def unauthorize(_, message):
     msg = message.text.split()
@@ -66,7 +73,9 @@ async def unauthorize(_, message):
     if chat_id in user_data and user_data[chat_id].get("AUTH"):
         thread_ids = user_data[chat_id].get("thread_ids", [])
         if thread_id is not None and thread_id in thread_ids:
-            user_data[chat_id]["thread_ids"] = [tid for tid in thread_ids if tid != thread_id]
+            user_data[chat_id]["thread_ids"] = [
+                tid for tid in thread_ids if tid != thread_id
+            ]
             # If no more authorized threads, remove AUTH as well
             if not user_data[chat_id]["thread_ids"]:
                 update_user_ldata(chat_id, "AUTH", False)
@@ -78,6 +87,7 @@ async def unauthorize(_, message):
         msg_text = "Already Unauthorized!"
     await send_message(message, msg_text)
 
+
 def extract_target_id(msg, message):
     """
     Utility to extract a user/chat ID for sudo operations.
@@ -88,8 +98,12 @@ def extract_target_id(msg, message):
         except Exception:
             return None
     elif getattr(message, "reply_to_message", None):
-        return (getattr(message.reply_to_message, "from_user", None) or getattr(message.reply_to_message, "sender_chat", None)).id
+        return (
+            getattr(message.reply_to_message, "from_user", None)
+            or getattr(message.reply_to_message, "sender_chat", None)
+        ).id
     return None
+
 
 @new_task
 async def add_sudo(_, message):
@@ -105,6 +119,7 @@ async def add_sudo(_, message):
     else:
         msg_text = "Provide ID or reply to the message of the user you want to promote."
     await send_message(message, msg_text)
+
 
 @new_task
 async def remove_sudo(_, message):

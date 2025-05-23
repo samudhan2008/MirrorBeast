@@ -4,6 +4,7 @@ from ..helper.ext_utils.status_utils import get_readable_file_size
 from ..helper.mirror_leech_utils.gdrive_utils.count import GoogleDriveCount
 from ..helper.telegram_helper.message_utils import delete_message, send_message
 
+
 @new_task
 async def count_node(_, message):
     """
@@ -47,8 +48,6 @@ async def count_node(_, message):
             await send_message(message, msg)
             return
     else:
-        msg = (
-            "Please provide a valid Google Drive link as an argument or reply to a message containing the link."
-        )
+        msg = "Please provide a valid Google Drive link as an argument or reply to a message containing the link."
 
     await send_message(message, msg)

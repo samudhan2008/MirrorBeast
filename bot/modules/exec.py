@@ -12,6 +12,7 @@ from ..helper.telegram_helper.message_utils import send_file, send_message
 
 namespaces = {}
 
+
 def namespace_of(message):
     """
     Returns a unique namespace (dict) for each chat.
@@ -30,11 +31,13 @@ def namespace_of(message):
         }
     return namespaces[chat_id]
 
+
 def log_input(message):
     user = message.from_user or message.sender_chat
     LOGGER.info(
         f"IN: {message.text} (user={getattr(user, 'id', None)}, chat={message.chat.id})"
     )
+
 
 async def send(msg, message):
     """
@@ -49,6 +52,7 @@ async def send(msg, message):
         LOGGER.info(f"OUT: '{msg_s[:256]}'{'...' if len(msg_s) > 256 else ''}")
         await send_message(message, f"<code>{msg_s}</code>")
 
+
 def cleanup_code(code):
     """
     Removes code block markers and whitespace.
@@ -57,6 +61,7 @@ def cleanup_code(code):
     if code.startswith("```") and code.endswith("```"):
         return "\n".join(code.split("\n")[1:-1])
     return code.strip("` \n")
+
 
 async def do(func, message):
     """
@@ -107,15 +112,18 @@ async def do(func, message):
                 return f"{repr(eval_result)}"
         return f"{value}{func_return}" if func_return is not None else value
 
+
 @new_task
 async def aioexecute(_, message):
     """Executes async Python code in an isolated per-chat namespace."""
     await send(await do("aexec", message), message)
 
+
 @new_task
 async def execute(_, message):
     """Executes sync Python code in an isolated per-chat namespace."""
     await send(await do("exec", message), message)
+
 
 @new_task
 async def clear(_, message):

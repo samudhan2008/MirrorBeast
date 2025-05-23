@@ -23,6 +23,7 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
 )
 
+
 @new_task
 async def restart_bot(_, message):
     """Handler for /restart command: confirms bot restart."""
@@ -33,6 +34,7 @@ async def restart_bot(_, message):
     await send_message(
         message, "<i>Are you really sure you want to restart the bot ?</i>", button
     )
+
 
 @new_task
 async def restart_sessions(_, message):
@@ -46,6 +48,7 @@ async def restart_sessions(_, message):
         "<i>Are you really sure you want to restart the session(s)?</i>",
         button,
     )
+
 
 async def send_incomplete_task_message(cid, msg_id, msg):
     """Send or edit message about incomplete tasks after restart."""
@@ -67,6 +70,7 @@ async def send_incomplete_task_message(cid, msg_id, msg):
             )
     except Exception as e:
         LOGGER.error(f"Error in send_incomplete_task_message: {e}")
+
 
 async def restart_notification():
     """Send notifications after restart about incomplete tasks, handle .restartmsg logic."""
@@ -116,6 +120,7 @@ async def restart_notification():
             LOGGER.error(f"restart_notification: {e}")
         await remove(".restartmsg")
 
+
 @new_task
 async def confirm_restart(_, query):
     """
@@ -159,10 +164,12 @@ async def confirm_restart(_, query):
                 jdownloader.close(),
             )
         kill_proc_cmd = [
-            "pkill", "-9", "-f",
+            "pkill",
+            "-9",
+            "-f",
             f"gunicorn|{BinConfig.ARIA2_NAME}|{BinConfig.QBIT_NAME}|"
             f"{BinConfig.FFMPEG_NAME}|{BinConfig.RCLONE_NAME}|java|"
-            f"{BinConfig.SABNZBD_NAME}|7z|split"
+            f"{BinConfig.SABNZBD_NAME}|7z|split",
         ]
         update_cmd = ["python3", "update.py"]
         proc1 = await asyncio.create_subprocess_exec(*kill_proc_cmd)

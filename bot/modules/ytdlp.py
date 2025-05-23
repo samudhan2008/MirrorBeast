@@ -29,6 +29,7 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
 )
 
+
 @new_task
 async def select_format(_, query, obj):
     """
@@ -66,10 +67,12 @@ async def select_format(_, query, obj):
             obj.qual = data[1]
         obj.event.set()
 
+
 class YtSelection:
     """
     Presents an interactive quality/format selector for yt-dlp downloads.
     """
+
     def __init__(self, listener):
         self.listener = listener
         self._is_m4a = False
@@ -230,12 +233,14 @@ class YtSelection:
         msg = f"Choose Audio{i} Quality:\n0 is best and 10 is worst\nTimeout: {get_readable_time(self._timeout - (time() - self._time))}"
         await edit_message(self._reply_to, msg, subbuttons)
 
+
 def extract_info(link, options):
     with YoutubeDL(options) as ydl:
         result = ydl.extract_info(link, download=False)
         if result is None:
             raise ValueError("Info result is None")
         return result
+
 
 async def _mdisk(link, name):
     key = link.split("/")[-1]
@@ -250,10 +255,12 @@ async def _mdisk(link, name):
             name = resp_json.get("filename", name)
     return name, link
 
+
 class YtDlp(TaskListener):
     """
     Handles all logic for yt-dlp-based downloads (YouTube and many others).
     """
+
     def __init__(
         self,
         client,
@@ -267,8 +274,10 @@ class YtDlp(TaskListener):
         multi_tag=None,
         options="",
     ):
-        if same_dir is None: same_dir = {}
-        if bulk is None: bulk = []
+        if same_dir is None:
+            same_dir = {}
+        if bulk is None:
+            bulk = []
         super().__init__()
         self.message = message
         self.client = client
@@ -292,11 +301,33 @@ class YtDlp(TaskListener):
             return
 
         args = {
-            "-doc": False, "-med": False, "-s": False, "-b": False, "-z": False,
-            "-sv": False, "-ss": False, "-f": False, "-fd": False, "-fu": False,
-            "-hl": False, "-bt": False, "-ut": False, "-i": 0, "-sp": 0, "link": "",
-            "-m": "", "-opt": {}, "-n": "", "-up": "", "-rcf": "", "-t": "",
-            "-ca": "", "-cv": "", "-ns": "", "-tl": "", "-ff": set(),
+            "-doc": False,
+            "-med": False,
+            "-s": False,
+            "-b": False,
+            "-z": False,
+            "-sv": False,
+            "-ss": False,
+            "-f": False,
+            "-fd": False,
+            "-fu": False,
+            "-hl": False,
+            "-bt": False,
+            "-ut": False,
+            "-i": 0,
+            "-sp": 0,
+            "link": "",
+            "-m": "",
+            "-opt": {},
+            "-n": "",
+            "-up": "",
+            "-rcf": "",
+            "-t": "",
+            "-ca": "",
+            "-cv": "",
+            "-ns": "",
+            "-tl": "",
+            "-ff": set(),
         }
         arg_parser(input_list[1:], args)
 
@@ -304,17 +335,22 @@ class YtDlp(TaskListener):
             await send_message(self.message, "FFmpeg commands are currently disabled.")
             return
 
-        try: self.multi = int(args["-i"])
-        except Exception: self.multi = 0
+        try:
+            self.multi = int(args["-i"])
+        except Exception:
+            self.multi = 0
 
         try:
             if args["-ff"]:
-                self.ffmpeg_cmds = args["-ff"] if isinstance(args["-ff"], set) else eval(args["-ff"])
+                self.ffmpeg_cmds = (
+                    args["-ff"] if isinstance(args["-ff"], set) else eval(args["-ff"])
+                )
         except Exception as e:
             self.ffmpeg_cmds = None
             LOGGER.error(e)
 
-        try: opt = eval(args["-opt"]) if args["-opt"] else {}
+        try:
+            opt = eval(args["-opt"]) if args["-opt"] else {}
         except Exception as e:
             LOGGER.error(e)
             opt = {}
@@ -457,8 +493,10 @@ class YtDlp(TaskListener):
         await delete_links(self.message)
         await ydl.add_download(path, qual, playlist, opt)
 
+
 async def ytdl(client, message):
     bot_loop.create_task(YtDlp(client, message).new_event())
+
 
 async def ytdl_leech(client, message):
     bot_loop.create_task(YtDlp(client, message, is_leech=True).new_event())

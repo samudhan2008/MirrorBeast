@@ -16,6 +16,7 @@ PLUGINS = []
 SITES = None
 TELEGRAPH_LIMIT = 300
 
+
 async def initiate_search_tools():
     """
     Initializes torrent search plugins and API-supported sites.
@@ -42,8 +43,11 @@ async def initiate_search_tools():
             }
             SITES["all"] = "All"
         except Exception as e:
-            LOGGER.error(f"{e} Can't fetch sites from SEARCH_API_LINK, make sure to use latest version of API")
+            LOGGER.error(
+                f"{e} Can't fetch sites from SEARCH_API_LINK, make sure to use latest version of API"
+            )
             SITES = None
+
 
 async def search(key, site, message, method):
     """
@@ -122,6 +126,7 @@ async def search(key, site, message, method):
     buttons.url_button("🔎 VIEW", link)
     button = buttons.build_menu(1)
     await edit_message(message, msg, button)
+
 
 async def get_result(search_results, key, message, method):
     """
@@ -205,6 +210,7 @@ async def get_result(search_results, key, message, method):
         await telegraph.edit_telegraph(path, telegraph_content)
     return f"https://telegra.ph/{path[0]}"
 
+
 def api_buttons(user_id, method):
     """
     Generates API site selection buttons.
@@ -214,6 +220,7 @@ def api_buttons(user_id, method):
         buttons.data_button(name, f"torser {user_id} {data} {method}")
     buttons.data_button("Cancel", f"torser {user_id} cancel")
     return buttons.build_menu(2)
+
 
 async def plugin_buttons(user_id):
     """
@@ -230,6 +237,7 @@ async def plugin_buttons(user_id):
     buttons.data_button("All", f"torser {user_id} all plugin")
     buttons.data_button("Cancel", f"torser {user_id} cancel")
     return buttons.build_menu(2)
+
 
 @new_task
 async def torrent_search(_, message):
@@ -267,6 +275,7 @@ async def torrent_search(_, message):
         button = await plugin_buttons(user_id)
         await send_message(message, "Choose site to search | Plugins:", button)
 
+
 @new_task
 async def torrent_search_update(_, query):
     """
@@ -297,7 +306,13 @@ async def torrent_search_update(_, query):
         method = data[3]
         if method.startswith("api"):
             if key is None:
-                endpoint = "Recent" if method == "apirecent" else "Trending" if method == "apitrend" else "Unknown"
+                endpoint = (
+                    "Recent"
+                    if method == "apirecent"
+                    else "Trending"
+                    if method == "apitrend"
+                    else "Unknown"
+                )
                 await edit_message(
                     message,
                     f"<b>Listing {endpoint} Items...\nTorrent Site:- <i>{SITES.get(site, site)}</i></b>",

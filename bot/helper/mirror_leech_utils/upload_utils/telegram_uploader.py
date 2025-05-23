@@ -139,13 +139,15 @@ class TelegramUploader:
         elif self._user_session:
             try:
                 self._sent_msg = await TgClient.user.get_messages(
-                    chat_id=self._listener.message.chat.id, message_ids=self._listener.mid
+                    chat_id=self._listener.message.chat.id,
+                    message_ids=self._listener.mid,
                 )
                 if self._sent_msg is None:
                     raise ValueError("Message not found")
             except (Exception,) as e:
                 # Handle invalid channel/chat or message not found
                 from pyrogram.errors import ChannelInvalid
+
                 if isinstance(e, (ChannelInvalid, KeyError, ValueError)):
                     # Fallback: send a new message to the user
                     self._sent_msg = await TgClient.user.send_message(

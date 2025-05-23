@@ -21,6 +21,7 @@ from ..helper.telegram_helper.message_utils import (
     delete_message,
 )
 
+
 @new_task
 async def select(_, message):
     """
@@ -112,6 +113,7 @@ async def select(_, message):
     msg = "Your download has been paused. Choose files then press the 'Done Selecting' button to resume downloading."
     await send_message(message, msg, SBUTTONS)
 
+
 @new_task
 async def confirm_selection(_, query):
     """
@@ -144,7 +146,9 @@ async def confirm_selection(_, query):
         if hasattr(task, "seeding"):
             if listener.is_qbit:
                 try:
-                    tor_info_list = await TorrentManager.qbittorrent.torrents.info(hashes=[id_])
+                    tor_info_list = await TorrentManager.qbittorrent.torrents.info(
+                        hashes=[id_]
+                    )
                     if not tor_info_list:
                         raise ValueError("No info found for the provided hash.")
                     tor_info = tor_info_list[0]
@@ -167,7 +171,9 @@ async def confirm_selection(_, query):
                 try:
                     res = await TorrentManager.aria2.getFiles(id_)
                     for f in res:
-                        if f.get("selected") == "false" and await aiopath.exists(f.get("path", "")):
+                        if f.get("selected") == "false" and await aiopath.exists(
+                            f.get("path", "")
+                        ):
                             try:
                                 await remove(f["path"])
                             except Exception:

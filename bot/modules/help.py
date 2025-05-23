@@ -12,6 +12,7 @@ from ..helper.telegram_helper.message_utils import (
     send_message,
 )
 
+
 @new_task
 async def arg_usage(_, query):
     """
@@ -24,20 +25,26 @@ async def arg_usage(_, query):
     action = data[1]
 
     if action == "close":
-        return await delete_message(message, getattr(message, "reply_to_message", message))
+        return await delete_message(
+            message, getattr(message, "reply_to_message", message)
+        )
 
     pg_no = int(data[3]) if len(data) > 3 else 0
 
     if action in {"nex", "pre", "back"}:
-        topic_map = {"mirror": "mirror", "yt": "yt", "clone": "clone",
-                     "m": "mirror", "y": "yt", "c": "clone"}
+        topic_map = {
+            "mirror": "mirror",
+            "yt": "yt",
+            "clone": "clone",
+            "m": "mirror",
+            "y": "yt",
+            "c": "clone",
+        }
         topic = data[2]
         cmd_key = topic_map.get(topic, topic)
         if cmd_key in COMMAND_USAGE:
             await edit_message(
-                message,
-                COMMAND_USAGE[cmd_key][0],
-                COMMAND_USAGE[cmd_key][pg_no + 1]
+                message, COMMAND_USAGE[cmd_key][0], COMMAND_USAGE[cmd_key][pg_no + 1]
             )
         return
 
@@ -57,6 +64,7 @@ async def arg_usage(_, query):
         help_text = help_dict.get(subtopic, "No help available for this section.")
         await edit_message(message, help_text, button)
         return
+
 
 @new_task
 async def bot_help(_, message):

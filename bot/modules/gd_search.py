@@ -8,6 +8,7 @@ from ..helper.mirror_leech_utils.gdrive_utils.search import GoogleDriveSearch
 from ..helper.telegram_helper.button_build import ButtonMaker
 from ..helper.telegram_helper.message_utils import send_message, edit_message
 
+
 async def list_buttons(user_id, is_recursive=True, user_token=False):
     """
     Generates InlineKeyboard buttons for GDrive list options.
@@ -35,11 +36,14 @@ async def list_buttons(user_id, is_recursive=True, user_token=False):
     buttons.data_button("Cancel", f"list_types {user_id} cancel", "footer")
     return buttons.build_menu(2)
 
+
 async def _list_drive(key, message, item_type, is_recursive, user_token, user_id):
     """
     Calls GoogleDriveSearch and updates the Telegram message with results or error.
     """
-    LOGGER.info(f"GD Listing: {key} | type: {item_type} | rec: {is_recursive} | user_token: {user_token}")
+    LOGGER.info(
+        f"GD Listing: {key} | type: {item_type} | rec: {is_recursive} | user_token: {user_token}"
+    )
     target_id = ""
     if user_token:
         user_dict = user_data.get(user_id, {})
@@ -48,7 +52,9 @@ async def _list_drive(key, message, item_type, is_recursive, user_token, user_id
 
     try:
         telegraph_content, contents_no = await sync_to_async(
-            GoogleDriveSearch(is_recursive=is_recursive, item_type=item_type).drive_list,
+            GoogleDriveSearch(
+                is_recursive=is_recursive, item_type=item_type
+            ).drive_list,
             key,
             target_id,
             user_id,
@@ -67,6 +73,7 @@ async def _list_drive(key, message, item_type, is_recursive, user_token, user_id
     except Exception as e:
         LOGGER.error(f"GDrive search error: {e}")
         await edit_message(message, f"Search failed: {e}")
+
 
 @new_task
 async def select_type(_, query):
@@ -103,6 +110,7 @@ async def select_type(_, query):
     item_type = action
     await edit_message(message, f"<b>Searching for <i>{key}</i>...</b>")
     await _list_drive(key, message, item_type, is_recursive, user_token, user_id)
+
 
 @new_task
 async def gdrive_search(_, message):

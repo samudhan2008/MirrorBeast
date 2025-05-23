@@ -28,7 +28,7 @@ async def speedtest(_, message):
     except ConfigRetrievalError:
         await edit_message(
             speed_msg,
-            "<b>ERROR:</b> <i>Can't connect to Speedtest server at the moment. Try again later!</i>"
+            "<b>ERROR:</b> <i>Can't connect to Speedtest server at the moment. Try again later!</i>",
         )
         return
     except SpeedtestException as e:
@@ -44,14 +44,14 @@ async def speedtest(_, message):
             d = d.get(k, {}) if isinstance(d, dict) else {}
         return d or default
 
-    upload_speed = get_readable_file_size(result.get('upload', 0) / 8) + "/s"
-    download_speed = get_readable_file_size(result.get('download', 0) / 8) + "/s"
-    ping = result.get('ping', 'N/A')
-    timestamp = result.get('timestamp', 'N/A')
-    bytes_sent = get_readable_file_size(int(result.get('bytes_sent', 0)))
-    bytes_received = get_readable_file_size(int(result.get('bytes_received', 0)))
-    server = result.get('server', {})
-    share_url = result.get('share', None)
+    upload_speed = get_readable_file_size(result.get("upload", 0) / 8) + "/s"
+    download_speed = get_readable_file_size(result.get("download", 0) / 8) + "/s"
+    ping = result.get("ping", "N/A")
+    timestamp = result.get("timestamp", "N/A")
+    bytes_sent = get_readable_file_size(int(result.get("bytes_sent", 0)))
+    bytes_received = get_readable_file_size(int(result.get("bytes_received", 0)))
+    server = result.get("server", {})
+    share_url = result.get("share", None)
 
     string_speed = f"""
 ➲ <b><i>SPEEDTEST INFO</i></b>
@@ -63,16 +63,18 @@ async def speedtest(_, message):
 ╰ <b>Data Received:</b> <code>{bytes_received}</code>
 
 ➲ <b><i>SPEEDTEST SERVER</i></b>
-╭ <b>Name:</b> <code>{server.get('name', 'N/A')}</code>
-├ <b>Country:</b> <code>{server.get('country', 'N/A')}, {server.get('cc', 'N/A')}</code>
-├ <b>Sponsor:</b> <code>{server.get('sponsor', 'N/A')}</code>
-├ <b>Latency:</b> <code>{server.get('latency', 'N/A')}</code>
-├ <b>Latitude:</b> <code>{server.get('lat', 'N/A')}</code>
-╰ <b>Longitude:</b> <code>{server.get('lon', 'N/A')}</code>
+╭ <b>Name:</b> <code>{server.get("name", "N/A")}</code>
+├ <b>Country:</b> <code>{server.get("country", "N/A")}, {server.get("cc", "N/A")}</code>
+├ <b>Sponsor:</b> <code>{server.get("sponsor", "N/A")}</code>
+├ <b>Latency:</b> <code>{server.get("latency", "N/A")}</code>
+├ <b>Latitude:</b> <code>{server.get("lat", "N/A")}</code>
+╰ <b>Longitude:</b> <code>{server.get("lon", "N/A")}</code>
 """
 
     try:
-        await send_message(message, string_speed, photo=share_url if share_url else None)
+        await send_message(
+            message, string_speed, photo=share_url if share_url else None
+        )
         await delete_message(speed_msg)
     except Exception as e:
         LOGGER.error(f"Speedtest send_message failed: {e}")

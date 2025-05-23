@@ -38,6 +38,7 @@ from ..helper.telegram_helper.message_utils import (
 from ..helper.telegram_helper.button_build import ButtonMaker
 from ..core.config_manager import Config
 
+
 def get_owner_id():
     """
     Resolve OWNER_ID with the following priority:
@@ -45,23 +46,26 @@ def get_owner_id():
     2. OWNER_ID environment variable
     3. Config.OWNER_ID fallback
     """
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.py')
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config.py"
+    )
     if os.path.exists(config_path):
-        spec = importlib.util.spec_from_file_location('config', config_path)
+        spec = importlib.util.spec_from_file_location("config", config_path)
         config = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(config)
-            if hasattr(config, 'OWNER_ID'):
+            if hasattr(config, "OWNER_ID"):
                 return config.OWNER_ID
         except Exception:
             pass
-    owner_id_env = os.getenv('OWNER_ID')
+    owner_id_env = os.getenv("OWNER_ID")
     if owner_id_env is not None:
         try:
             return int(owner_id_env)
         except ValueError:
             pass
-    return getattr(Config, 'OWNER_ID', 0)
+    return getattr(Config, "OWNER_ID", 0)
+
 
 OWNER_ID = get_owner_id()
 
@@ -114,7 +118,7 @@ EASTER_EGGS = [
     "🪑 <b><i>Empty chair vibes.</i></b>",
     "📸 <b><i>Snapshot of… absolutely nothing.</i></b>",
     "🐚 <b><i>Echoes of nothing.</i></b>",
-    "🌪️ <b><i>A whirlwind of inactivity.</i></b>"
+    "🌪️ <b><i>A whirlwind of inactivity.</i></b>",
 ]
 
 OWNER_RESPONSES = [
@@ -127,8 +131,9 @@ OWNER_RESPONSES = [
     "⚙️ <b>No active processes, as you command.</b>",
     "🖥️ <b>The system is idle and awaiting your orders.</b>",
     "📊 <b>All clear, Captain. No current operations.</b>",
-    "📭 <b>The taskbox is empty, Boss.</b>"
+    "📭 <b>The taskbox is empty, Boss.</b>",
 ]
+
 
 @new_task
 async def task_status(_, message):
@@ -143,7 +148,7 @@ async def task_status(_, message):
         current_time = get_readable_time(time() - bot_start_time)
         free = get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)
 
-        is_owner = (message.from_user.id == OWNER_ID)
+        is_owner = message.from_user.id == OWNER_ID
         response = random.choice(OWNER_RESPONSES if is_owner else EASTER_EGGS)
 
         msg = (
@@ -169,16 +174,22 @@ async def task_status(_, message):
         await send_status_message(message, user_id)
         await delete_message(message)
 
+
 async def get_download_status(download):
     """
     Get status and speed for a download task.
     Returns: (status_str, speed, engine_str)
     """
     eng = download.engine
-    speed = (download.speed() if eng.startswith(("Pyro", "yt-dlp", "RClone", "Google-API")) else 0)
+    speed = (
+        download.speed()
+        if eng.startswith(("Pyro", "yt-dlp", "RClone", "Google-API"))
+        else 0
+    )
     status_func = download.status
-    status = (await status_func() if iscoroutinefunction(status_func) else status_func())
+    status = await status_func() if iscoroutinefunction(status_func) else status_func()
     return status, speed, eng
+
 
 @new_task
 async def status_pages(_, query):
@@ -210,9 +221,20 @@ async def status_pages(_, query):
     elif action == "ov":
         message = query.message
         task_types = [
-            "Download", "Upload", "Seed", "Archive", "Extract", "Split",
-            "QueueDl", "QueueUp", "Clone", "CheckUp", "Pause", "SamVid",
-            "ConvertMedia", "FFmpeg"
+            "Download",
+            "Upload",
+            "Seed",
+            "Archive",
+            "Extract",
+            "Split",
+            "QueueDl",
+            "QueueUp",
+            "Clone",
+            "CheckUp",
+            "Pause",
+            "SamVid",
+            "ConvertMedia",
+            "FFmpeg",
         ]
         tasks = {t: 0 for t in task_types}
         dl_speed = up_speed = seed_speed = 0
@@ -223,7 +245,10 @@ async def status_pages(_, query):
             )
 
         eng_status = EngineStatus()
-        if any(eng in (eng_status.STATUS_ARIA2, eng_status.STATUS_QBIT) for _, __, eng in status_results):
+        if any(
+            eng in (eng_status.STATUS_ARIA2, eng_status.STATUS_QBIT)
+            for _, __, eng in status_results
+        ):
             dl, seed = await TorrentManager.overall_speed()
             dl_speed += dl
             seed_speed += seed
@@ -231,7 +256,11 @@ async def status_pages(_, query):
         if any(eng == eng_status.STATUS_SABNZBD for _, __, eng in status_results):
             if sabnzbd_client.LOGGED_IN:
                 try:
-                    kbps = float((await sabnzbd_client.get_downloads())["queue"].get("kbpersec", "0"))
+                    kbps = float(
+                        (await sabnzbd_client.get_downloads())["queue"].get(
+                            "kbpersec", "0"
+                        )
+                    )
                 except Exception:
                     kbps = 0
                 dl_speed += int(kbps * 1024)
@@ -239,7 +268,9 @@ async def status_pages(_, query):
         if any(eng == eng_status.STATUS_JD for _, __, eng in status_results):
             if jdownloader.is_connected:
                 try:
-                    jd_speed = await jdownloader.device.downloadcontroller.get_speed_in_bytes()
+                    jd_speed = (
+                        await jdownloader.device.downloadcontroller.get_speed_in_bytes()
+                    )
                 except Exception:
                     jd_speed = 0
                 dl_speed += jd_speed

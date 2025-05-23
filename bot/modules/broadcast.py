@@ -16,6 +16,7 @@ from ..helper.telegram_helper.message_utils import (
 
 bc_cache = {}
 
+
 async def delete_broadcast(bc_id, message):
     """Delete broadcasted messages based on the broadcast ID."""
     if bc_id not in bc_cache:
@@ -51,8 +52,9 @@ async def delete_broadcast(bc_id, message):
 ┠ <b>Success:</b> <code>{success}</code>
 ┖ <b>Failed Attempts:</b> <code>{failed}</code>
 
-<b>Broadcast ID:</b> <code>{bc_id}</code>"""
+<b>Broadcast ID:</b> <code>{bc_id}</code>""",
     )
+
 
 async def edit_broadcast(bc_id, message, rply):
     """Edit broadcasted messages based on the broadcast ID."""
@@ -103,8 +105,9 @@ async def edit_broadcast(bc_id, message, rply):
 ┠ <b>Success:</b> <code>{success}</code>
 ┖ <b>Failed Attempts:</b> <code>{failed}</code>
 
-<b>Broadcast ID:</b> <code>{bc_id}</code>"""
+<b>Broadcast ID:</b> <code>{bc_id}</code>""",
     )
+
 
 def parse_broadcast_args(message):
     """Parse broadcast command arguments and flags."""
@@ -115,9 +118,7 @@ def parse_broadcast_args(message):
 
     if len(msg_args) > 1:
         if not msg_args[1].startswith("-"):
-            bc_id = (
-                msg_args[1] if bc_cache.get(msg_args[1], False) else ""
-            )
+            bc_id = msg_args[1] if bc_cache.get(msg_args[1], False) else ""
         for arg in msg_args:
             if arg in ["-f", "-forward"] and rply:
                 forwarded = True
@@ -128,6 +129,7 @@ def parse_broadcast_args(message):
             elif arg in ["-e", "-edit"] and bc_id and rply:
                 edited = True
     return bc_id, forwarded, quietly, deleted, edited
+
 
 @new_task
 async def broadcast(_, message):

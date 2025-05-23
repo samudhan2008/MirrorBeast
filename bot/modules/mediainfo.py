@@ -16,8 +16,13 @@ from ..helper.telegram_helper.message_utils import send_message, edit_message
 
 # Emoji mapping for info sections
 SECTION_EMOJIS = {
-    "General": "🗒", "Video": "🎞", "Audio": "🔊", "Text": "🔠", "Menu": "🗃"
+    "General": "🗒",
+    "Video": "🎞",
+    "Audio": "🔊",
+    "Text": "🔠",
+    "Menu": "🗃",
 }
+
 
 async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     """
@@ -47,7 +52,9 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
             async with ClientSession() as session:
                 async with session.get(link, headers=headers) as response:
                     if response.status != 200:
-                        raise Exception(f"Failed to download file (HTTP {response.status})")
+                        raise Exception(
+                            f"Failed to download file (HTTP {response.status})"
+                        )
                     file_size = int(response.headers.get("Content-Length", 0))
                     async with aiopen(des_path, "wb") as f:
                         async for chunk in response.content.iter_chunked(10_000_000):
@@ -91,13 +98,16 @@ async def gen_mediainfo(message, link=None, media=None, mmsg=None):
     except Exception as e:
         await edit_message(temp_send, f"Failed to post MediaInfo to Telegraph: {e}")
 
+
 def parseinfo(out, size):
     """
     Formats mediainfo CLI output to HTML with emoji sections and file size.
     """
     lines = out.strip().split("\n")
     tc, in_section = "", False
-    size_line = f"File size                                 : {size / (1024 * 1024):.2f} MiB"
+    size_line = (
+        f"File size                                 : {size / (1024 * 1024):.2f} MiB"
+    )
     for line in lines:
         # Section headers
         for section, emoji in SECTION_EMOJIS.items():
@@ -118,6 +128,7 @@ def parseinfo(out, size):
         tc += "</pre><br>"
     return tc
 
+
 async def mediainfo(_, message):
     """
     Entrypoint for /mediainfo command.
@@ -133,7 +144,7 @@ async def mediainfo(_, message):
 """
     # If command contains link as argument or reply is text
     if (len(message.command) > 1) or (rply and getattr(rply, "text", None)):
-        link = (rply.text if rply and getattr(rply, "text", None) else message.command[1])
+        link = rply.text if rply and getattr(rply, "text", None) else message.command[1]
         return await gen_mediainfo(message, link)
     elif rply:
         # Find the first available media type

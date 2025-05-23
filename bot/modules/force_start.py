@@ -13,6 +13,7 @@ from ..helper.telegram_helper.bot_commands import BotCommands
 from ..helper.telegram_helper.message_utils import send_message
 from ..helper.ext_utils.task_manager import start_dl_from_queued, start_up_from_queued
 
+
 @new_task
 async def remove_from_queue(_, message):
     """
