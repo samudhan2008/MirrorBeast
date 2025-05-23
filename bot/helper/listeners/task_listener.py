@@ -400,7 +400,7 @@ class TaskListener(TaskConfig):
                 and not self.private_link
             ):
                 buttons = ButtonMaker()
-                if (link and Config.SHOW_CLOUD_LINK):
+                if link and Config.SHOW_CLOUD_LINK:
                     buttons.url_button("☁️ Cloud Link", link)
                 else:
                     msg += f"\n\nPath: <code>{rclone_path}</code>"
@@ -436,7 +436,7 @@ class TaskListener(TaskConfig):
 
             chat_type = self.message.chat.type
             chat_type_str = str(chat_type)
-            if hasattr(chat_type, 'value'):
+            if hasattr(chat_type, "value"):
                 chat_type_str = chat_type.value
             chat_type_str = chat_type_str.lower()
             is_private_chat = chat_type_str == "private"
@@ -458,7 +458,9 @@ class TaskListener(TaskConfig):
                 try:
                     await send_message(mirror_log_id, complete_msg, button)
                 except Exception as e:
-                    LOGGER.error(f"[TaskListener] Failed to send to MIRROR_LOG_ID: {mirror_log_id} - {e}")
+                    LOGGER.error(
+                        f"[TaskListener] Failed to send to MIRROR_LOG_ID: {mirror_log_id} - {e}"
+                    )
 
         if self.seed:
             await clean_target(self.up_dir)

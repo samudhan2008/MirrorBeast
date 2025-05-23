@@ -31,9 +31,7 @@ async def start(_, message):
     userid = message.from_user.id
     lang = Language()
     buttons = ButtonMaker()
-    buttons.url_button(
-        lang.START_BUTTON1, "https://github.com/MirrorBeast/MirrorBeast"
-    )
+    buttons.url_button(lang.START_BUTTON1, "https://github.com/MirrorBeast/MirrorBeast")
     buttons.url_button(lang.START_BUTTON2, "https://t.me/MirrorBeast")
     reply_markup = buttons.build_menu(2)
 
@@ -164,7 +162,8 @@ async def ping(_, message):
     reply = await send_message(message, "<i>Starting Ping..</i>")
     end_time = monotonic()
     await edit_message(
-        reply, f"<i>Get a life!, ping is 👇</i>\n <code>{int((end_time - start_time) * 1000)} ms</code>"
+        reply,
+        f"<i>Get a life!, ping is 👇</i>\n <code>{int((end_time - start_time) * 1000)} ms</code>",
     )
 
 
