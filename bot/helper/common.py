@@ -252,7 +252,7 @@ class TaskConfig:
             elif "FFMPEG_CMDS" not in self.user_dict and Config.FFMPEG_CMDS:
                 ffmpeg_dict = deepcopy(Config.FFMPEG_CMDS)
             else:
-                                ffmpeg_dict = None
+                ffmpeg_dict = None
             if ffmpeg_dict is None:
                 self.ffmpeg_cmds = ffmpeg_dict
             else:

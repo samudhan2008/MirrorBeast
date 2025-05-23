@@ -2,6 +2,7 @@ from importlib import import_module
 from os import getenv
 from ast import literal_eval
 
+
 class Config:
     AS_DOCUMENT = False
     AUTHORIZED_CHATS = ""

@@ -262,6 +262,7 @@ def buzzheavier(url):
     except Exception as e:
         raise DirectDownloadLinkException(f"ERROR: {str(e)}") from e
 
+
 def fuckingfast_dl(url):
     """
     Generate a direct download link for fuckingfast.co URLs.

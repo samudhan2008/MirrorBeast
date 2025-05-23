@@ -782,6 +782,7 @@ async def get_menu(option, message, user_id):
 """
     await edit_message(message, text, buttons.build_menu(2))
 
+
 async def set_ffmpeg_variable(_, message, key, value, index):
     user_id = message.from_user.id
     handler_dict[user_id] = False

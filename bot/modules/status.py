@@ -38,27 +38,31 @@ import random
 import importlib.util
 from ..core.config_manager import Config
 
+
 def get_owner_id():
     # 1. Try to import from config.py if present
-    config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.py')
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config.py"
+    )
     if os.path.exists(config_path):
-        spec = importlib.util.spec_from_file_location('config', config_path)
+        spec = importlib.util.spec_from_file_location("config", config_path)
         config = importlib.util.module_from_spec(spec)
         try:
             spec.loader.exec_module(config)
-            if hasattr(config, 'OWNER_ID'):
+            if hasattr(config, "OWNER_ID"):
                 return config.OWNER_ID
         except Exception:
             pass
     # 2. Try environment variable
-    owner_id_env = os.getenv('OWNER_ID')
+    owner_id_env = os.getenv("OWNER_ID")
     if owner_id_env is not None:
         try:
             return int(owner_id_env)
         except ValueError:
             pass
     # 3. Fallback to config_manager.py
-    return getattr(Config, 'OWNER_ID', 0)
+    return getattr(Config, "OWNER_ID", 0)
+
 
 OWNER_ID = get_owner_id()
 
@@ -112,7 +116,7 @@ easter_eggs = [
     "🪑 <b><i>Empty chair vibes.</i></b>",
     "📸 <b><i>Snapshot of… absolutely nothing.</i></b>",
     "🐚 <b><i>Echoes of nothing.</i></b>",
-    "🌪️ <b><i>A whirlwind of inactivity.</i></b>"
+    "🌪️ <b><i>A whirlwind of inactivity.</i></b>",
 ]
 
 # Polite responses for owner (10)
@@ -126,8 +130,9 @@ owner_responses = [
     "⚙️ <b>No active processes, as you command.</b>",
     "🖥️ <b>The system is idle and awaiting your orders.</b>",
     "📊 <b>All clear, Captain. No current operations.</b>",
-    "📭 <b>The taskbox is empty, Boss.</b>"
+    "📭 <b>The taskbox is empty, Boss.</b>",
 ]
+
 
 @new_task
 async def task_status(_, message):

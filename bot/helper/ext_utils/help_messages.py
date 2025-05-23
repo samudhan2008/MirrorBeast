@@ -4,9 +4,11 @@ from ..telegram_helper.bot_commands import BotCommands
 NOTE = "<b>NOTE:</b>"
 CMD = "/cmd"
 
+
 # Helper function to format commands
 def format_command(description, *examples):
     return f"<b>{description}</b>:\n" + "\n".join(examples)
+
 
 # Mirror Help Messages
 mirror = f"""<b>Send link along with command line or </b>\n\n{CMD} link\n\n<b>By replying to link/file</b>:\n\n{CMD} -n new name -e -up upload destination\n\n{NOTE}:\n1. Commands that start with <b>qb</b> are ONLY for torrents."""
@@ -18,7 +20,9 @@ yt = f"""<b>Send link along with command line</b>:\n\n{CMD} link\n<b>By replying
 clone = f"""Send Gdrive|Gdot|Filepress|Filebee|Appdrive|Gdflix link or rclone path along with command or by replying to the link/rc_path by command.\nUse -sync to use sync method in rclone. Example: {CMD} rcl/rclone_path -up rcl/rclone_path/rc -sync"""
 
 # Reintroduce missing variables from the original file
-new_name = """<b>New Name</b>: -n\n\n/cmd link -n new name\nNote: Doesn't work with torrents"""
+new_name = (
+    """<b>New Name</b>: -n\n\n/cmd link -n new name\nNote: Doesn't work with torrents"""
+)
 extract_zip = """<b>Extract/Zip</b>: -e -z\n\n/cmd link -e password (extract password protected)\n/cmd link -z password (zip password protected)\n/cmd link -z password -e (extract and zip password protected)\nNote: When both extract and zip added with cmd it will extract first and then zip, so always extract first"""
 seed = """<b>Bittorrent seed</b>: -d\n\n/cmd link -d ratio:seed_time or by replying to file/link\nTo specify ratio and seed time add -d ratio:time.\nExample: -d 0.7:10 (ratio and time) or -d 0.7 (only ratio) or -d :10 (only time) where time in minutes"""
 multi_link = """<b>Multi links only by replying to first link/file</b>: -i\n\n/cmd -i 10(number of links/files)"""
@@ -34,9 +38,13 @@ tg_links = """<b>TG Links</b>:\n\nTreat links like any direct link\nSome links n
 sample_video = """<b>Sample Video</b>: -sv\n\nCreate sample video for one video or folder of videos."""
 screenshot = """<b>ScreenShots</b>: -ss\n\nCreate screenshots for one video or folder of videos."""
 convert_media = """<b>Convert Media</b>: -ca -cv\n\n/cmd link -ca mp3 -cv mp4 (convert all audios to mp3 and all videos to mp4)"""
-force_start = """<b>Force Start</b>: -f -fd -fu\n\n/cmd link -f (force download and upload)"""
+force_start = (
+    """<b>Force Start</b>: -f -fd -fu\n\n/cmd link -f (force download and upload)"""
+)
 user_download = """<b>User Download</b>: link\n\n/cmd tp:link to download using owner token.pickle incase service account enabled."""
-name_swap = """<b>Name Substitution</b>: -ns\n\n/cmd link -ns script/code/s | mirror/leech"""
+name_swap = (
+    """<b>Name Substitution</b>: -ns\n\n/cmd link -ns script/code/s | mirror/leech"""
+)
 transmission = """<b>Tg transmission</b>: -hl -ut -bt\n\n/cmd link -hl (leech by user and bot session with respect to size) (Hybrid Leech)"""
 thumbnail_layout = """Thumbnail Layout: -tl\n\n/cmd link -tl 3x3 (widthxheight) 3 photos in row and 3 photos in column"""
 leech_as = """<b>Leech as</b>: -doc -med\n\n/cmd link -doc (Leech as document)"""
@@ -52,7 +60,7 @@ YT_HELP_DICT = {
     "New-Name": f"<b>New Name</b>: -n\n\n{CMD} link -n new name\nNote: Doesn't work with torrents",
     "Zip": "<b>Zip</b>: -z password\n\n{CMD} link -z (zip)\n{CMD} link -z password (zip password protected)",
     "Quality": "<b>Quality Buttons</b>: -s\n\nIn case default quality added from yt-dlp options using format option and you need to select quality for specific link or links with multi links feature.\n{CMD} link -s",
-    "Options": "<b>Options</b>: -opt\n\n{CMD} link -opt {\"format\": \"bv*+mergeall[vcodec=none]\", \"nocheckcertificate\": True, \"playliststart\": 10, \"fragment_retries\": float(\"inf\"), \"matchtitle\": \"S13\", \"writesubtitles\": True, \"live_from_start\": True, \"postprocessor_args\": {\"ffmpeg\": [\"-threads\", \"4\"]}, \"wait_for_video\": (5, 100), \"download_ranges\": [{\"start_time\": 0, \"end_time\": 10}]}",
+    "Options": '<b>Options</b>: -opt\n\n{CMD} link -opt {"format": "bv*+mergeall[vcodec=none]", "nocheckcertificate": True, "playliststart": 10, "fragment_retries": float("inf"), "matchtitle": "S13", "writesubtitles": True, "live_from_start": True, "postprocessor_args": {"ffmpeg": ["-threads", "4"]}, "wait_for_video": (5, 100), "download_ranges": [{"start_time": 0, "end_time": 10}]}',
     "Multi-Link": "<b>Multi links only by replying to first link/file</b>: -i\n\n{CMD} -i 10(number of links/files)",
     "Same-Directory": "<b>Move file(s)/folder(s) to new folder</b>: -m\n\nYou can use this arg also to move multiple links/torrents contents to the same directory, so all links will be uploaded together as one task\n\n{CMD} link -m new folder (only one link inside new folder)\n{CMD} -i 10(number of links/files) -m folder name (all links contents in one folder)\n{CMD} -b -m folder name (reply to batch of message/file(each link on new line))",
     "Thumb": "<b>Thumbnail for current task</b>: -t\n\n{CMD} link -t tg-message-link (doc or photo) or none (file without thumb)",
@@ -68,7 +76,7 @@ YT_HELP_DICT = {
     "TG-Transmission": "<b>Tg transmission</b>: -hl -ut -bt\n\n{CMD} link -hl (leech by user and bot session with respect to size) (Hybrid Leech)",
     "Thumb-Layout": "Thumbnail Layout: -tl\n\n{CMD} link -tl 3x3 (widthxheight) 3 photos in row and 3 photos in column",
     "Leech-Type": "<b>Leech as</b>: -doc -med\n\n{CMD} link -doc (Leech as document)",
-    "FFmpeg-Cmds": "<b>FFmpeg Commands</b>: -ff\n\nlist of lists of ffmpeg commands. You can set multiple ffmpeg commands for all files before upload."
+    "FFmpeg-Cmds": "<b>FFmpeg Commands</b>: -ff\n\nlist of lists of ffmpeg commands. You can set multiple ffmpeg commands for all files before upload.",
 }
 
 MIRROR_HELP_DICT = {

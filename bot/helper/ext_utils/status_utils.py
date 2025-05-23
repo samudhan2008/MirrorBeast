@@ -190,18 +190,18 @@ def speed_string_to_bytes(size_text: str):
 def get_progress_bar_string(pct):
     pct = float(str(pct).strip("%"))
     p = min(max(pct, 0), 100)
-    
+
     # Use new progress bar symbols: ◔◑◕⬤○
     # Calculate how many filled symbols we need
     total_blocks = 12
     filled_blocks = int(p / (100 / total_blocks))
-    
+
     # Create the progress bar string
     p_str = ""
-    
+
     # Fill with completed blocks (⬤)
     p_str += "⬤" * filled_blocks
-    
+
     # Add partially filled block if needed
     remaining_pct = p % (100 / total_blocks)
     if remaining_pct > 0 and filled_blocks < total_blocks:
@@ -214,17 +214,17 @@ def get_progress_bar_string(pct):
         elif remaining_pct < (75 / total_blocks * 100):
             p_str += "◕"
             filled_blocks += 1
-    
+
     # Fill the rest with empty blocks (○)
     p_str += "○" * (total_blocks - filled_blocks)
-    
+
     return f"[{p_str}]"
 
 
 async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=1):
     msg = ""
     button = None
-    
+
     # Add the custom header with link from config
     bot_header = Config.CUSTOM_BOT_HEADER or "Beast"
     bot_header_link = Config.CUSTOM_BOT_HEADER_LINK or "https://t.me/MirrorBeast"
@@ -330,6 +330,8 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
     button = buttons.build_menu(8)
     msg += f"\n├ <b>CPU</b> → {cpu_percent()}%"
     msg += f"\n├ <b>RAM</b> → {virtual_memory().percent}%"
-    msg += f"\n├ <b>Storage</b> → {get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)}"
+    msg += (
+        f"\n├ <b>Storage</b> → {get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)}"
+    )
     msg += f"\n╰ <b>Uptime</b> → {get_readable_time(time() - bot_start_time)}"
     return msg, button

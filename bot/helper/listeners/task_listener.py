@@ -346,10 +346,10 @@ class TaskListener(TaskConfig):
             and Config.DATABASE_URL
         ):
             await database.rm_complete_task(self.message.link)
-        
+
         # Add save message prefix to use in callback data
         save_prefix = f"save_{self.mid}"
-        
+
         msg = (
             f"<b><i>{escape(self.name)}</i></b>\n│"
             f"\n┟ <b>Task Size</b> → {get_readable_file_size(self.size)}"
@@ -369,7 +369,7 @@ class TaskListener(TaskConfig):
                 # Ensure we have a valid user_id
                 user_id = self.user_id
                 LOGGER.info(f"Attempting to send leech results to user PM: {user_id}")
-                
+
                 # Full message prepared for PM
                 full_msg = msg
                 full_msg += "〶 <b><u>Files List :</u></b>\n"
@@ -386,28 +386,26 @@ class TaskListener(TaskConfig):
                         flink = f"https://t.me/{TgClient.BNAME}?start={encode_slink('file' + chat_id + '&&' + msg_id)}"
                         fmsg += f"\n┖ <b>Get Media</b> → <a href='{flink}'>Store Link</a> | <a href='https://t.me/share/url?url={flink}'>Share Link</a>"
                     fmsg += "\n"
-                    
+
                 # Send notification to group
                 group_msg = f"<b><i>{escape(self.name)}</i></b>\n│"
-                group_msg += f"\n┠ <b>Task Size</b> → {get_readable_file_size(self.size)}"
+                group_msg += (
+                    f"\n┠ <b>Task Size</b> → {get_readable_file_size(self.size)}"
+                )
                 group_msg += f"\n┠ <b>Status</b> → Completed and sent to your PM"
                 group_msg += f"\n┖ <b>Task By</b> → {self.tag}"
-                
+
                 # Send full message with links to PM - Using direct API method
                 if fmsg:
                     if len(fmsg.encode() + full_msg.encode()) <= 4000:
-                        await send_message(
-                            user_id, 
-                            full_msg + fmsg
+                        await send_message(user_id, full_msg + fmsg)
+                        LOGGER.info(
+                            f"Successfully sent complete message to user PM: {user_id}"
                         )
-                        LOGGER.info(f"Successfully sent complete message to user PM: {user_id}")
                     else:
                         # Split into multiple messages if too long
-                        await send_message(
-                            user_id, 
-                            full_msg
-                        )
-                        
+                        await send_message(user_id, full_msg)
+
                         chunks = []
                         current_chunk = ""
                         for line in fmsg.splitlines(True):
@@ -418,33 +416,29 @@ class TaskListener(TaskConfig):
                                 current_chunk += line
                         if current_chunk:
                             chunks.append(current_chunk)
-                            
+
                         for chunk in chunks:
                             await sleep(1)  # Avoid rate limiting
-                            await send_message(
-                                user_id, 
-                                chunk
-                            )
-                        LOGGER.info(f"Successfully sent chunked messages to user PM: {user_id}")
+                            await send_message(user_id, chunk)
+                        LOGGER.info(
+                            f"Successfully sent chunked messages to user PM: {user_id}"
+                        )
                 else:
                     # No files to list, just send the message
-                    await send_message(
-                        user_id, 
-                        full_msg
-                    )
+                    await send_message(user_id, full_msg)
                     LOGGER.info(f"Successfully sent message to user PM: {user_id}")
-                
+
                 # Send notification to group
                 await send_message(self.message, group_msg)
             except Exception as e:
                 # If sending to PM fails, fall back to sending in group
                 LOGGER.error(f"Failed to send message to PM: {str(e)}")
-                
+
                 # Create buttons for group message
                 save_button = ButtonMaker()
                 save_button.callback_button("📥 Save", save_prefix)
                 save_markup = save_button.build_menu(1)
-                
+
                 if not files and not self.is_super_chat:
                     await send_message(self.message, msg, save_markup)
                 else:
@@ -473,12 +467,11 @@ class TaskListener(TaskConfig):
             if mime_type == "Folder":
                 msg += f"\n┠ <b>SubFolders</b> → {folders}"
                 msg += f"\n┠ <b>Files</b> → {files}"
-            if (
-                link
-                or (rclone_path and Config.RCLONE_SERVE_URL and not self.private_link)
+            if link or (
+                rclone_path and Config.RCLONE_SERVE_URL and not self.private_link
             ):
                 buttons = ButtonMaker()
-                if (link and Config.SHOW_CLOUD_LINK):
+                if link and Config.SHOW_CLOUD_LINK:
                     buttons.url_button("☁️ Cloud Link", link)
                 else:
                     msg += f"\n\nPath: <code>{rclone_path}</code>"
@@ -486,7 +479,7 @@ class TaskListener(TaskConfig):
                     remote, rpath = rclone_path.split(":", 1)
                     url_path = rutils.quote(f"{rpath}")
                     share_url = f"{Config.RCLONE_SERVE_URL}/{url_path}"
-                     # Redirect to index page instead of direct download
+                    # Redirect to index page instead of direct download
                     if mime_type == "Folder" or not share_url.endswith("/"):
                         share_url = share_url.rstrip("/")
                     buttons.url_button("🔗 Rclone Link", share_url)
@@ -502,18 +495,18 @@ class TaskListener(TaskConfig):
                         if mime_type.startswith(("image", "video", "audio")):
                             share_urls = f"{INDEX_URL}findpath?id={dir_id}&view=true"
                             buttons.url_button("🌐 View Link", share_urls)
-                
+
                 # Add Save to Saved Messages button
                 buttons.callback_button("📥 Save", save_prefix)
                 button = buttons.build_menu(2)
             else:
                 msg += f"\n┃\n┠ Path: <code>{rclone_path}</code>"
-                
+
                 # Create buttons if none exist
                 buttons = ButtonMaker()
                 buttons.callback_button("📥 Save", save_prefix)
                 button = buttons.build_menu(1)
-            
+
             msg += f"\n┃\n┖ <b>Task By</b> → {self.tag}"
             await send_message(self.message, msg, button)
             msg += f"\n┃\n┖ <b>Task By</b> → {self.tag}\n\n"
