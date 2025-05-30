@@ -68,54 +68,173 @@
             margin-right: 2rem;
         }
         .nav-links {
-            display: flex;
-            gap: 1.1rem;
+            display: none;
         }
-        .nav-link {
+        .hero-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin: 1rem auto 0;
+            justify-items: center;
+            max-width: 600px;
+        }
+        .hero-button {
             color: var(--text-color);
             text-decoration: none;
             font-weight: 600;
             font-size: 1rem;
-            border-radius: 1.2rem;
-            padding: 0.4rem 1.1rem;
-            transition: background 0.18s, color 0.18s;
-        }
-        .nav-link:hover {
+            border-radius: 2rem;
+            padding: 0.8rem;
             background: var(--accent);
-            color: #232946;
+            text-align: center;
+            transition: background 0.18s, color 0.18s;
+            width: 140px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-button:hover {
+            background: var(--primary);
+            color: #ffffff;
         }
         /* Hero section */
         .main-hero {
-            min-height: 100vh;
+            min-height: 75vh;
             display: flex;
             align-items: center;
             justify-content: center;
             background: none;
         }
         .hero-content {
-            margin-top: 7.5rem;
+            margin-top: 4rem;
             width: 100vw;
             max-width: 600px;
             text-align: center;
         }
         .hero-logo {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 1.2rem;
-            border: 2.5px solid var(--accent);
-            background: #232946;
-            box-shadow: 0 2px 16px 0 rgba(239,131,84,0.10);
+            width: 300px;
+            height: 300px;
         }
-        @media (max-width: 700px) {
-            .nav-content { padding: 0.7rem 0.7rem; }
-            .hero-content { margin-top: 6.2rem; }
-            .hero-content h1 { font-size: 1.5rem; }
+        @media (max-width: 1024px) {
+            .nav-content {
+                padding: 0.7rem 1rem;
+            }
+            .hero-content {
+                margin-top: 6rem;
+                padding: 0 1rem;
+            }
         }
-        @media (max-width: 400px) {
-            .nav-title { font-size: 1.1rem; }
-            .nav-by { font-size: 0.8rem; }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            .hero-buttons {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+                margin-top: 2rem;
+                justify-items: center;
+            }
+            .hero-button {
+                color: var(--text-color);
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 1rem;
+                border-radius: 2rem;
+                padding: 0.8rem;
+                background: var(--accent);
+                text-align: center;
+                transition: background 0.18s, color 0.18s;
+                width: 140px;
+                height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .hero-button:hover {
+                background: var(--primary);
+                color: #ffffff;
+            }
+            .nav-toggle {
+                display: block;
+                font-size: 1.5rem;
+                color: var(--text-color);
+                background: none;
+                border: none;
+                cursor: pointer;
+                margin-left: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-title {
+                font-size: 1rem;
+            }
+            .nav-by {
+                font-size: 0.7rem;
+            }
+            .hero-content h1 {
+                font-size: 1.4rem;
+            }
+            .hero-content p {
+                font-size: 0.8rem;
+            }
+            .nav-links {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                flex-direction: column;
+                gap: 0;
+                align-items: flex-start;
+                background: var(--glass);
+                border-radius: 0 0 0.5rem 0.5rem;
+                padding: 0.5rem 0;
+                display: none;
+                z-index: 9;
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .nav-link {
+                width: 100%;
+                padding: 0.8rem 1.2rem;
+                text-align: left;
+            }
+            .nav-toggle {
+                display: block;
+                font-size: 1.5rem;
+                color: var(--text-color);
+                background: none;
+                border: none;
+                cursor: pointer;
+                margin-left: auto;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .nav-toggle {
+                display: none;
+            }
+            .nav-links {
+                display: flex !important;
+                flex-direction: row;
+                gap: 1.1rem;
+                align-items: center;
+                background: none;
+                padding: 0;
+                margin-top: 0;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .hero-button {
+                width: 180px;
+                height: 60px;
+                font-size: 1.1rem;
+            }
         }
     </style>
 </head>
@@ -123,12 +242,9 @@
     <nav class="navbar">
       <div class="nav-content">
         <span class="nav-title">MirrorBeast</span>
-        <div class="nav-links">
-          <a href="https://t.me/MirrorBeast" class="nav-link"><i class="fab fa-telegram-plane"></i> Channel</a>
-          <a href="https://t.me/MirrorBeastSupport" class="nav-link"><i class="fas fa-comments"></i> Support</a>
-          <a href="https://github.com/BeastBots/MirrorBeast" class="nav-link"><i class="fab fa-github"></i> GitHub</a>
-          <a href="https://github.com/BeastBots/MirrorBeast#readme" class="nav-link"><i class="fas fa-book"></i> Docs</a>
-        </div>
+        <button class="nav-toggle" aria-label="Toggle navigation">
+          <i class="fas fa-bars"></i>
+        </button>
       </div>
     </nav>
     <main class="main-hero">
@@ -138,5 +254,21 @@
         <p class="hero-sub">The Ultimate Telegram Mirror & Leech Bot by <b>BeastBots</b></p>
       </div>
     </main>
+    <div class="hero-buttons">
+        <a href="https://t.me/FastMirrors" class="hero-button"><i class="fab fa-telegram-plane"></i> Channel</a>
+        <a href="https://t.me/FastMirrorsSupport" class="hero-button"><i class="fas fa-comments"></i> Support</a>
+        <a href="https://github.com/BeastBots" class="hero-button"><i class="fab fa-github"></i> GitHub</a>
+        <a href="https://github.com/BeastBots/MirrorBeast#readme" class="hero-button"><i class="fas fa-book"></i> Docs</a>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const toggleButton = document.querySelector('.nav-toggle');
+        const navLinks = document.querySelector('.nav-links');
+
+        toggleButton.addEventListener('click', () => {
+          navLinks.classList.toggle('active');
+        });
+      });
+    </script>
 </body>
 </html>
