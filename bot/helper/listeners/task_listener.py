@@ -378,7 +378,7 @@ class TaskListener(TaskConfig):
                         self.is_super_chat or Config.LEECH_DUMP_CHAT
                     ):
                         if chat_id.isdigit():
-                            chat_id = f"-100{chat_id}"
+                            chat_id = int(f"-100{chat_id}")
                         flink = f"https://t.me/{TgClient.BNAME}?start={encode_slink('file' + chat_id + '&&' + msg_id)}"
                         fmsg += f"\n╰ <b>Get Media</b> → <a href='{flink}'>Store Link</a> | <a href='https://t.me/share/url?url={flink}'>Share Link</a>"
                     fmsg += "\n"
