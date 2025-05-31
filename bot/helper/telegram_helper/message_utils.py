@@ -31,8 +31,11 @@ from ..ext_utils.status_utils import get_readable_message
 async def send_message(message, text, buttons=None, block=True, photo=None, **kwargs):
     try:
         if isinstance(message, str):
-            LOGGER.error(f"send_message called with str instead of Message: {message}")
-            return
+            if message.lstrip("-").isdigit():
+                message = int(message)
+            else:
+                LOGGER.error(f"send_message called with str instead of Message: {message}")
+                return
         if photo:
             try:
                 if isinstance(message, int):
