@@ -324,7 +324,7 @@ async def get_readable_message(sid, is_user, page_no=1, status="All", page_step=
                 buttons.data_button(label, f"status {sid} st {status_value}")
     buttons.data_button("sʏɴᴄ", f"status {sid} ref", position="header")
     button = buttons.build_menu(8)
-    msg += f"\n┊ <blockquote><code>CPU  :</code> {cpu_percent()}%"
+    msg += f"\n<blockquote>╭ <code>CPU  :</code> {cpu_percent()}%"
     msg += f"\n┊ <code>RAM  :</code> {virtual_memory().percent}%"
     msg += (
         f"\n┊ <code>FREE :</code> {get_readable_file_size(disk_usage(DOWNLOAD_DIR).free)}"
