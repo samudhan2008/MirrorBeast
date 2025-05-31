@@ -49,7 +49,7 @@ from ..helper.telegram_helper.message_utils import (
     get_tg_link_message,
     send_message,
 )
-
+from pyrogram.types import Message
 
 class Mirror(TaskListener):
     def __init__(
@@ -69,6 +69,9 @@ class Mirror(TaskListener):
             same_dir = {}
         if bulk is None:
             bulk = []
+        if not isinstance(message, Message):
+            import logging
+            logging.error(f"Mirror.__init__: message is not a Message: {type(message)}")
         self.message = message
         self.client = client
         self.multi_tag = multi_tag

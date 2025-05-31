@@ -30,6 +30,9 @@ from ..ext_utils.status_utils import get_readable_message
 
 async def send_message(message, text, buttons=None, block=True, photo=None, **kwargs):
     try:
+        if isinstance(message, str):
+            LOGGER.error(f"send_message called with str instead of Message: {message}")
+            return
         if photo:
             try:
                 if isinstance(message, int):
@@ -78,6 +81,9 @@ async def send_message(message, text, buttons=None, block=True, photo=None, **kw
                 disable_notification=True,
                 reply_markup=buttons,
             )
+        if not isinstance(message, Message):
+            LOGGER.error(f"send_message: message is not a Message or int: {type(message)}")
+            return
         return await message.reply(
             text=text,
             quote=True,
